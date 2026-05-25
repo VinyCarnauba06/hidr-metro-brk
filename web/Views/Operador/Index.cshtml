@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Ordens de Serviço";
+}
+
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Ordens de Serviço</h1>
+
+<div class="grid gap-4">
+    @foreach (var os in (IEnumerable<dynamic>)Model)
+    {
+        <div class="bg-white rounded-xl shadow p-5 flex items-center justify-between">
+            <div>
+                <p class="font-bold text-lg text-gray-800">@os.condominio</p>
+                <p class="text-sm text-gray-500">Competência: @os.mes/@os.ano</p>
+                <div class="flex gap-3 mt-2 text-xs">
+                    <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">@os.leiturasValidadas / @os.totalLeituras validadas</span>
+                    @if ((int)os.suspeitasVazamento > 0)
+                    {
+                        <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded">@os.suspeitasVazamento suspeitas de vazamento</span>
+                    }
+                    @if ((int)os.leiturasPendentes > 0)
+                    {
+                        <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">@os.leiturasPendentes pendentes</span>
+                    }
+                </div>
+            </div>
+            <a href="/Operador/Validar?osId=@os.id"
+               class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                Validar
+            </a>
+        </div>
+    }
+
+    @if (!((IEnumerable<dynamic>)Model).Any())
+    {
+        <div class="bg-white rounded-xl shadow p-10 text-center text-gray-500">
+            Nenhuma OS aguardando validação.
+        </div>
+    }
+</div>

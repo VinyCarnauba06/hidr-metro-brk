@@ -1,0 +1,20 @@
+<nav class="bg-blue-700 text-white shadow">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="/" class="font-bold text-lg tracking-wide">Hidrômetro BRK</a>
+        <div class="flex items-center gap-6 text-sm">
+            @if (User.IsInRole("Operador") || User.IsInRole("Admin"))
+            {
+                <a href="/Operador" class="hover:underline">Validações</a>
+            }
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Admin/Dashboard" class="hover:underline">Dashboard</a>
+                <a href="/Admin/Auditoria" class="hover:underline">Auditoria</a>
+            }
+            <span class="text-blue-200">@User.Identity?.Name</span>
+            <form method="post" action="/Auth/Logout" class="inline">
+                <button type="submit" class="bg-blue-800 px-3 py-1 rounded hover:bg-blue-900">Sair</button>
+            </form>
+        </div>
+    </div>
+</nav>

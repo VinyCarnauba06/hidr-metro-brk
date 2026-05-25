@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hidrometro_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hidrometro_brk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-senha123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seeds/usuarios_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: hidrometro_api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: Production
+      DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:-senha123}@db:5432/hidrometro_brk
+      JWT_SECRET: ${JWT_SECRET:-mude-este-secret-em-producao-minimo-32-chars}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-8}
+      AZURE_VISION_ENDPOINT: ${AZURE_VISION_ENDPOINT:-}
+      AZURE_VISION_KEY: ${AZURE_VISION_KEY:-}
+    volumes:
+      - fotos_data:/app/storage/fotos
+      - logs_data:/app/storage/logs
+    depends_on:
+      - db
+
+volumes:
+  pg_data:
+  fotos_data:
+  logs_data:

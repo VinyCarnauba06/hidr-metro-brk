@@ -1,0 +1,24 @@
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 5000
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY ["backend/src/HidrometroApp.Api/HidrometroApp.Api.csproj", "HidrometroApp.Api/"]
+COPY ["backend/src/HidrometroApp.Core/HidrometroApp.Core.csproj", "HidrometroApp.Core/"]
+COPY ["backend/src/HidrometroApp.Infrastructure/HidrometroApp.Infrastructure.csproj", "HidrometroApp.Infrastructure/"]
+
+RUN dotnet restore "HidrometroApp.Api/HidrometroApp.Api.csproj"
+
+COPY backend/src/ .
+RUN dotnet publish "HidrometroApp.Api/HidrometroApp.Api.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# Volume para fotos
+VOLUME ["/app/storage/fotos", "/app/storage/logs"]
+
+ENTRYPOINT ["dotnet", "HidrometroApp.Api.dll"]

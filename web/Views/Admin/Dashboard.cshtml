@@ -1,0 +1,43 @@
+@{
+    ViewData["Title"] = "Dashboard Admin";
+    var d = Model as dynamic;
+}
+
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    @foreach (var (label, value, color) in new[] {
+        ("Condomínios", (object)(d?.totalCondominios ?? 0), "blue"),
+        ("Unidades Ativas", (object)(d?.totalUnidades ?? 0), "indigo"),
+        ("OS Abertas", (object)(d?.ordensAbertas ?? 0), "yellow"),
+        ("Suspeitas Vazamento", (object)(d?.suspeitasVazamento ?? 0), "red"),
+    })
+    {
+        <div class="bg-white rounded-xl shadow p-5">
+            <p class="text-sm text-gray-500 mb-1">@label</p>
+            <p class="text-3xl font-bold text-@(color)-600">@value</p>
+        </div>
+    }
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl shadow p-5">
+        <p class="text-sm text-gray-500 mb-1">Leituras no mês</p>
+        <p class="text-3xl font-bold text-gray-800">@(d?.leiturasNoMes ?? 0)</p>
+        <div class="mt-2 text-xs text-gray-400">
+            IA: @(d?.leiturasIa ?? 0) &nbsp;|&nbsp; Manual: @(d?.leiturasManual ?? 0)
+        </div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+        <p class="text-sm text-gray-500 mb-1">Usuários ativos</p>
+        <p class="text-3xl font-bold text-gray-800">@(d?.totalUsuarios ?? 0)</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+        <p class="text-sm text-gray-500 mb-1">OS criadas no mês</p>
+        <p class="text-3xl font-bold text-gray-800">@(d?.ordensNoMes ?? 0)</p>
+    </div>
+</div>
+
+<div class="mt-6 flex gap-3">
+    <a href="/Admin/Auditoria" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-900">Ver Auditoria</a>
+</div>

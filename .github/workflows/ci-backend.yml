@@ -1,0 +1,50 @@
+name: CI — Backend .NET
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: hidrometro_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore backend/HidrometroApp.sln
+
+      - name: Build
+        run: dotnet build backend/HidrometroApp.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test backend/HidrometroApp.sln --no-build -c Release --logger "trx;LogFileName=results.trx"
+        env:
+          DATABASE_URL: postgresql://postgres:test123@localhost:5432/hidrometro_test
+          JWT_SECRET: test-secret-minimo-32-chars-aqui!!

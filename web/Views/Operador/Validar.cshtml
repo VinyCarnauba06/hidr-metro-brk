@@ -1,0 +1,187 @@
+@{
+    ViewData["Title"] = "Validar Leituras";
+    var osId = ViewBag.OsId as int? ?? 0;
+    var progresso = ViewBag.Progresso;
+    var leituras = (IEnumerable<dynamic>)Model;
+    var total = progresso?.totalUnidades ?? 0;
+    var registradas = progresso?.leiturasRegistradas ?? 0;
+    var pct = total > 0 ? (int)((double)registradas / total * 100) : 0;
+    var faltando = progresso?.faltandoRegistrar ?? 0;
+}
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Validar Leituras</h1>
+    <a href="/Operador" class="text-blue-600 text-sm hover:underline">Voltar</a>
+</div>
+
+<!-- Progresso -->
+<div class="bg-blue-50 rounded-xl p-5 mb-6 border border-blue-100">
+    <div class="flex justify-between text-sm font-medium text-blue-800 mb-2">
+        <span>@registradas de @total leituras registradas</span>
+        <span>@pct%</span>
+    </div>
+    <div class="w-full bg-blue-200 rounded-full h-2.5">
+        <div class="bg-blue-600 h-2.5 rounded-full" style="width: @pct%"></div>
+    </div>
+    @if (faltando > 0)
+    {
+        <p class="text-xs text-gray-500 mt-2">@faltando unidades ainda sem leitura</p>
+    }
+</div>
+
+<!-- Botões de relatório -->
+@if (faltando == 0)
+{
+    <div class="flex gap-3 mb-6">
+        <a href="/Operador/GerarExcel?osId=@osId"
+           class="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
+            Baixar Excel
+        </a>
+        <a href="/Operador/GerarPdf?osId=@osId"
+           class="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-700">
+            Baixar PDF
+        </a>
+    </div>
+}
+
+<!-- Grid de leituras -->
+<div class="space-y-4">
+    @foreach (var leitura in leituras)
+    {
+        var statusColor = (string)leitura.status == "Validado" ? "border-green-400" :
+                          (string)leitura.status == "Rejeitado" ? "border-red-400" : "border-yellow-400";
+        <div class="bg-white rounded-xl shadow border-l-4 @statusColor p-0 overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+                <!-- Foto -->
+                <div class="bg-gray-50 flex items-center justify-center min-h-48 p-4">
+                    @if (leitura.fotoPath != null)
+                    {
+                        <img src="/Operador/GetFoto?id=@leitura.id"
+                             class="max-h-56 rounded border object-contain"
+                             alt="Foto unidade @leitura.numeroUnidade" />
+                    }
+                    else
+                    {
+                        <p class="text-gray-400 text-sm">Sem foto (entrada manual)</p>
+                    }
+                </div>
+
+                <!-- Dados + Ações -->
+                <div class="p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-xl text-gray-800">Unidade @leitura.numeroUnidade</p>
+                        <span class="text-xs px-2 py-0.5 rounded @(
+                            (string)leitura.status == "Validado" ? "bg-green-100 text-green-700" :
+                            (string)leitura.status == "Rejeitado" ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700")">
+                            @leitura.status
+                        </span>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-500">Valor extraído pela IA</p>
+                        <p class="text-2xl font-bold text-blue-700">@leitura.valorM3 m³</p>
+                        @if (leitura.confiancaIa != null)
+                        {
+                            <p class="text-xs text-gray-400">Confiança: @($"{(double)leitura.confiancaIa * 100:F0}")%
+                                | Origem: @leitura.origem</p>
+                        }
+                    </div>
+
+                    @if ((bool)leitura.suspeitaVazamento)
+                    {
+                        <div class="bg-red-50 border border-red-200 rounded p-2 text-red-700 text-xs font-medium">
+                            Suspeita de vazamento detectada
+                        </div>
+                    }
+
+                    @if ((string)leitura.status == "Pendente")
+                    {
+                        <div class="grid grid-cols-3 gap-2 pt-2">
+                            <!-- Aprovar -->
+                            <form method="post" action="/Operador/AprovarLeitura">
+                                <input type="hidden" name="id" value="@leitura.id" />
+                                <input type="hidden" name="osId" value="@osId" />
+                                <button type="submit"
+                                    class="w-full bg-green-500 text-white py-2 rounded text-sm font-medium hover:bg-green-600">
+                                    Aprovar
+                                </button>
+                            </form>
+
+                            <!-- Corrigir -->
+                            <button onclick="abrirCorrecao(@leitura.id, @osId)"
+                                class="w-full bg-blue-500 text-white py-2 rounded text-sm font-medium hover:bg-blue-600">
+                                Corrigir
+                            </button>
+
+                            <!-- Rejeitar -->
+                            <button onclick="abrirRejeicao(@leitura.id, @osId)"
+                                class="w-full bg-red-500 text-white py-2 rounded text-sm font-medium hover:bg-red-600">
+                                Rejeitar
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Corrigir -->
+<div id="modalCorrecao" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+        <h3 class="font-bold text-lg mb-4">Corrigir Leitura</h3>
+        <form method="post" action="/Operador/CorrigirLeitura">
+            <input type="hidden" id="correcaoId" name="id" />
+            <input type="hidden" id="correcaoOsId" name="osId" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Valor Correto (m³)</label>
+            <input name="valorCorrigido" type="number" step="0.01" min="0"
+                class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-blue-500 outline-none" required />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+            <textarea name="observacao" rows="2"
+                class="w-full border rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="fecharModal('modalCorrecao')"
+                    class="px-4 py-2 rounded bg-gray-200 text-sm hover:bg-gray-300">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Rejeitar -->
+<div id="modalRejeicao" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+        <h3 class="font-bold text-lg mb-4">Rejeitar Leitura</h3>
+        <form method="post" action="/Operador/RejeitarLeitura">
+            <input type="hidden" id="rejeicaoId" name="id" />
+            <input type="hidden" id="rejeicaoOsId" name="osId" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Motivo da Rejeição</label>
+            <textarea name="motivoRejeicao" rows="3"
+                class="w-full border rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none" required></textarea>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="fecharModal('modalRejeicao')"
+                    class="px-4 py-2 rounded bg-gray-200 text-sm hover:bg-gray-300">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700">Rejeitar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function abrirCorrecao(id, osId) {
+        document.getElementById('correcaoId').value = id;
+        document.getElementById('correcaoOsId').value = osId;
+        document.getElementById('modalCorrecao').classList.remove('hidden');
+    }
+    function abrirRejeicao(id, osId) {
+        document.getElementById('rejeicaoId').value = id;
+        document.getElementById('rejeicaoOsId').value = osId;
+        document.getElementById('modalRejeicao').classList.remove('hidden');
+    }
+    function fecharModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+</script>
+}

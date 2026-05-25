@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Auditoria";
+    var registros = (IEnumerable<dynamic>)Model;
+    var pagina = (int)ViewBag.Pagina;
+}
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Auditoria</h1>
+</div>
+
+<!-- Filtros -->
+<form method="get" class="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-3 items-end">
+    <div>
+        <label class="block text-xs text-gray-500 mb-1">Tabela</label>
+        <input name="tabela" class="border rounded px-3 py-1.5 text-sm" placeholder="ex: leituras_hidrometro" />
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 mb-1">Ação</label>
+        <select name="acao" class="border rounded px-3 py-1.5 text-sm">
+            <option value="">Todas</option>
+            <option>INSERT</option><option>UPDATE</option><option>DELETE</option>
+            <option>VALIDATE</option><option>CORRECT</option><option>REJECT</option><option>MANUAL</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 mb-1">De</label>
+        <input name="de" type="date" class="border rounded px-3 py-1.5 text-sm" />
+    </div>
+    <div>
+        <label class="block text-xs text-gray-500 mb-1">Até</label>
+        <input name="ate" type="date" class="border rounded px-3 py-1.5 text-sm" />
+    </div>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Filtrar</button>
+</form>
+
+<!-- Tabela -->
+<div class="bg-white rounded-xl shadow overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left">Data/Hora</th>
+                <th class="px-4 py-3 text-left">Usuário</th>
+                <th class="px-4 py-3 text-left">Tabela</th>
+                <th class="px-4 py-3 text-left">Ação</th>
+                <th class="px-4 py-3 text-left">Registro</th>
+                <th class="px-4 py-3 text-left">Origem</th>
+                <th class="px-4 py-3 text-left">Motivo</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            @foreach (var reg in registros)
+            {
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 text-gray-500 whitespace-nowrap">@((DateTime)reg.criadoEm).ToString("dd/MM/yy HH:mm")</td>
+                    <td class="px-4 py-2">@(reg.usuario ?? "—")</td>
+                    <td class="px-4 py-2 font-mono text-xs">@(reg.tabela ?? "")</td>
+                    <td class="px-4 py-2">
+                        <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">@reg.acao</span>
+                    </td>
+                    <td class="px-4 py-2">@(reg.registroId ?? "—")</td>
+                    <td class="px-4 py-2 text-xs text-gray-400">@(reg.origem ?? "")</td>
+                    <td class="px-4 py-2 text-xs text-gray-500">@(reg.motivo ?? "")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (!registros.Any())
+    {
+        <div class="text-center py-8 text-gray-400">Nenhum registro encontrado.</div>
+    }
+</div>
+
+<!-- Paginação -->
+<div class="flex justify-between mt-4 text-sm">
+    @if (pagina > 1)
+    {
+        <a href="?pagina=@(pagina - 1)" class="text-blue-600 hover:underline">Anterior</a>
+    }
+    else { <span></span> }
+    <a href="?pagina=@(pagina + 1)" class="text-blue-600 hover:underline">Próxima</a>
+</div>

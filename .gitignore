@@ -1,0 +1,62 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+TestResults/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# VS Code
+.vscode/
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock
+*.g.dart
+*.freezed.dart
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+
+# macOS
+.DS_Store
+*.swp
+
+# Node
+node_modules/
+
+# Storage (fotos reais)
+storage/fotos/202*/
+storage/backup_local/
+!storage/fotos/.gitkeep
+!storage/logs/.gitkeep
+
+# Backups
+database/backups/*.sql
