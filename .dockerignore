@@ -1,0 +1,22 @@
+# Artefatos de compilação do backend
+**/bin/
+**/obj/
+
+# App mobile — não faz parte da imagem da API
+mobile/
+
+# Testes não integram a imagem de produção
+backend/tests/
+
+# Arquivos de IDE e desenvolvimento local
+.vs/
+*.user
+*.suo
+**/.DS_Store
+
+# Variáveis de ambiente locais — nunca enviar para a imagem
+.env
+
+# Fotos armazenadas localmente — usam volume em produção
+storage/fotos/
+storage/logs/

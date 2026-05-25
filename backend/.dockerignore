@@ -1,0 +1,12 @@
+# Artefatos de compilação — gerados pelo build stage, nunca enviar para o contexto
+**/bin/
+**/obj/
+
+# Testes não integram a imagem de produção
+tests/
+
+# Arquivos de IDE e desenvolvimento local
+.vs/
+*.user
+*.suo
+**/.DS_Store
