@@ -6,7 +6,6 @@ using HidrometroApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using System.Drawing;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 
@@ -85,8 +84,8 @@ public class RelatorioService : IRelatorioService
             ws.Cells[3, i + 1].Value = headers[i];
             ws.Cells[3, i + 1].Style.Font.Bold = true;
             ws.Cells[3, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            ws.Cells[3, i + 1].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(0, 112, 192));
-            ws.Cells[3, i + 1].Style.Font.Color.SetColor(Color.White);
+            ws.Cells[3, i + 1].Style.Fill.BackgroundColor.SetColor(255, 0, 112, 192);
+            ws.Cells[3, i + 1].Style.Font.Color.SetColor(255, 255, 255, 255);
         }
 
         int row = 4;
@@ -103,7 +102,7 @@ public class RelatorioService : IRelatorioService
             if (item.SuspeitaVazamento)
             {
                 ws.Cells[row, 1, row, 7].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                ws.Cells[row, 1, row, 7].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(255, 230, 230));
+                ws.Cells[row, 1, row, 7].Style.Fill.BackgroundColor.SetColor(255, 255, 230, 230);
             }
             row++;
         }
@@ -148,14 +147,14 @@ public class RelatorioService : IRelatorioService
                 HorizontalAlignment = Element.ALIGN_CENTER,
                 Padding = 5
             };
-            cell.Phrase.Font.Color = BaseColor.WHITE;
+            cell.Phrase.Font.Color = BaseColor.White;
             table.AddCell(cell);
         }
 
         var bgAlert = new BaseColor(255, 230, 230);
         foreach (var item in dados.Itens)
         {
-            var bg = item.SuspeitaVazamento ? bgAlert : BaseColor.WHITE;
+            var bg = item.SuspeitaVazamento ? bgAlert : BaseColor.White;
             void AddCell(string val) => table.AddCell(new PdfPCell(new Phrase(val, cellFont)) { BackgroundColor = bg, Padding = 4 });
 
             AddCell(item.Unidade);

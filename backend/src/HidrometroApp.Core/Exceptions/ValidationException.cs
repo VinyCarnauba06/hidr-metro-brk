@@ -1,8 +1,8 @@
 namespace HidrometroApp.Core.Exceptions;
 
-public class ValidationException : Exception
+public class HidrometroValidationException : Exception
 {
-    public ValidationException(string message) : base(message) { }
+    public HidrometroValidationException(string message) : base(message) { }
 }
 
 public class LeituraInvalidaException : Exception

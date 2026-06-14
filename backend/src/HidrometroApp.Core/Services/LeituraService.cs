@@ -142,7 +142,7 @@ public class LeituraService : ILeituraService
         leitura.Origem = OrigemLeitura.Manual;
         leitura.Status = StatusLeitura.Pendente;
         leitura.QualidadeFoto = QualidadeFoto.Manual;
-        leitura.Observacao = request.Observacao;
+        leitura.Observacao = Sanitizar(request.Observacao);
 
         var ultimaLeitura = await ObterUltimaLeituraValidadaAsync(leitura.UnidadeId);
         if (ultimaLeitura > 0)
@@ -174,7 +174,7 @@ public class LeituraService : ILeituraService
         leitura.Status = StatusLeitura.Validado;
         leitura.ValidadoPorId = operadorId;
         leitura.ValidadoEm = DateTime.UtcNow;
-        leitura.Observacao = request.Observacao;
+        leitura.Observacao = Sanitizar(request.Observacao);
 
         await _db.SaveChangesAsync();
         await RegistrarHistoricoConsumoAsync(leitura);
@@ -195,7 +195,7 @@ public class LeituraService : ILeituraService
             ?? throw new NotFoundException($"Leitura {leituraId} não encontrada");
 
         if (!request.ValorM3Corrigido.HasValue)
-            throw new ValidationException("Informe o valor corrigido");
+            throw new HidrometroValidationException("Informe o valor corrigido");
 
         var (valida, motivo) = await _anomalia.ValidarLeituraAsync(leitura.UnidadeId, request.ValorM3Corrigido.Value);
         if (!valida) throw new LeituraInvalidaException(motivo!);
@@ -206,7 +206,7 @@ public class LeituraService : ILeituraService
         leitura.Status = StatusLeitura.Validado;
         leitura.ValidadoPorId = operadorId;
         leitura.ValidadoEm = DateTime.UtcNow;
-        leitura.Observacao = request.Observacao;
+        leitura.Observacao = Sanitizar(request.Observacao);
 
         await _db.SaveChangesAsync();
         await RegistrarHistoricoConsumoAsync(leitura);
@@ -221,6 +221,9 @@ public class LeituraService : ILeituraService
 
     public async Task<LeituraResponse> RejeitarAsync(int leituraId, int operadorId, ValidarLeituraRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.MotivoRejeicao))
+            throw new HidrometroValidationException("Motivo de rejeição é obrigatório");
+
         var leitura = await _db.LeiturasHidrometro
             .Include(l => l.Unidade)
             .FirstOrDefaultAsync(l => l.Id == leituraId)
@@ -229,7 +232,7 @@ public class LeituraService : ILeituraService
         var anterior = new { leitura.Status };
 
         leitura.Status = StatusLeitura.Rejeitado;
-        leitura.MotivoRejeicao = request.MotivoRejeicao;
+        leitura.MotivoRejeicao = Sanitizar(request.MotivoRejeicao);
         leitura.ValidadoPorId = operadorId;
         leitura.ValidadoEm = DateTime.UtcNow;
 
@@ -370,6 +373,9 @@ public class LeituraService : ILeituraService
             }
         }
     }
+
+    private static string? Sanitizar(string? s, int max = 500) =>
+        s == null ? null : s.Length > max ? s[..max] : s;
 
     private static LeituraResponse MapearResponse(LeituraHidrometro l, string numeroUnidade, bool permiteRecurso) => new()
     {

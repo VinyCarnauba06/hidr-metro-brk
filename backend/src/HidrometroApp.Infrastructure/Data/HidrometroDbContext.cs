@@ -15,6 +15,7 @@ public class HidrometroDbContext : DbContext
     public DbSet<HistoricoConsumo> HistoricoConsumo => Set<HistoricoConsumo>();
     public DbSet<HistoricoTrocaHidrometro> HistoricoTrocaHidrometro => Set<HistoricoTrocaHidrometro>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
+    public DbSet<OperadorCondominio> OperadorCondominios => Set<OperadorCondominio>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,8 +25,8 @@ public class HidrometroDbContext : DbContext
         {
             e.ToTable("usuarios");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Cpf).IsRequired().HasMaxLength(11);
-            e.HasIndex(x => x.Cpf).IsUnique();
+            e.Property(x => x.Email).IsRequired().HasMaxLength(255);
+            e.HasIndex(x => x.Email).IsUnique();
             e.Property(x => x.Nome).IsRequired().HasMaxLength(255);
             e.Property(x => x.SenhaHash).IsRequired().HasMaxLength(255);
             e.Property(x => x.Perfil).HasConversion<string>();
@@ -104,6 +105,17 @@ public class HidrometroDbContext : DbContext
                 .HasForeignKey(x => x.UnidadeId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.CriadoPor).WithMany()
                 .HasForeignKey(x => x.CriadoPorId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<OperadorCondominio>(e =>
+        {
+            e.ToTable("operador_condominios");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.OperadorId, x.CondominioId }).IsUnique();
+            e.HasOne(x => x.Operador).WithMany(x => x.CondominiosAtribuidos)
+                .HasForeignKey(x => x.OperadorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Condominio).WithMany(x => x.Operadores)
+                .HasForeignKey(x => x.CondominioId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Auditoria>(e =>

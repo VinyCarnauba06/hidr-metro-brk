@@ -11,6 +11,7 @@ public class Condominio
 
     public ICollection<Unidade> Unidades { get; set; } = new List<Unidade>();
     public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
+    public ICollection<OperadorCondominio> Operadores { get; set; } = new List<OperadorCondominio>();
 }
 
 public enum TipoMedidor

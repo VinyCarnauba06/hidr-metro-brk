@@ -1,81 +1,191 @@
 @{
     ViewData["Title"] = "Auditoria";
-    var registros = (IEnumerable<dynamic>)Model;
-    var pagina = (int)ViewBag.Pagina;
+    var registros   = (IEnumerable<JsonElement>)Model;
+    var pagina      = (int)ViewBag.Pagina;
+    var erroViewBag = ViewBag.Erro as string;
+
+    var curTabela = Context.Request.Query["tabela"].ToString();
+    var curAcao   = Context.Request.Query["acao"].ToString();
+    var curDe     = Context.Request.Query["de"].ToString();
+    var curAte    = Context.Request.Query["ate"].ToString();
+
+    var filterQs  = "";
+    if (!string.IsNullOrEmpty(curTabela)) filterQs += $"&tabela={Uri.EscapeDataString(curTabela)}";
+    if (!string.IsNullOrEmpty(curAcao))   filterQs += $"&acao={Uri.EscapeDataString(curAcao)}";
+    if (!string.IsNullOrEmpty(curDe))     filterQs += $"&de={Uri.EscapeDataString(curDe)}";
+    if (!string.IsNullOrEmpty(curAte))    filterQs += $"&ate={Uri.EscapeDataString(curAte)}";
+
+    string AcaoCls(string acao) => acao switch {
+        "INSERT"   => "bg-hbrk/15 text-hbrk border-hbrk/30",
+        "UPDATE"   => "bg-blue-500/15 text-blue-400 border-blue-500/30",
+        "DELETE"   => "bg-red-500/15 text-red-400 border-red-500/30",
+        "VALIDATE" => "bg-hbrk/15 text-hbrk border-hbrk/30",
+        "CORRECT"  => "bg-amber-500/15 text-amber-400 border-amber-500/30",
+        "REJECT"   => "bg-orange-500/15 text-orange-400 border-orange-500/30",
+        "MANUAL"   => "bg-violet-500/15 text-violet-400 border-violet-500/30",
+        _          => "bg-slate-500/15 text-slate-400 border-slate-500/30",
+    };
 }
 
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Auditoria</h1>
+@* ── Error banner ──────────────────────────────────────────────── *@
+@if (!string.IsNullOrEmpty(erroViewBag))
+{
+    <div class="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+        <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p class="text-sm text-red-400">@erroViewBag</p>
+    </div>
+}
+
+@* ── Page header ───────────────────────────────────────────────── *@
+<div class="flex items-end justify-between mb-6">
+    <div>
+        <h1 class="font-syne font-bold text-2xl text-slate-100">Auditoria</h1>
+        <p class="text-slate-500 text-sm mt-1">Log imutável de todas as ações do sistema</p>
+    </div>
+    <a href="/Admin/Dashboard"
+       class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors border border-hrim rounded-lg px-3 py-1.5 hover:border-slate-600">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Dashboard
+    </a>
 </div>
 
-<!-- Filtros -->
-<form method="get" class="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-3 items-end">
-    <div>
-        <label class="block text-xs text-gray-500 mb-1">Tabela</label>
-        <input name="tabela" class="border rounded px-3 py-1.5 text-sm" placeholder="ex: leituras_hidrometro" />
+@* ── Filter form ───────────────────────────────────────────────── *@
+<form method="get" class="bg-hsurf rounded-2xl border border-hrim p-4 mb-6">
+    <div class="flex flex-wrap gap-3 items-end">
+
+        <div class="min-w-0 flex-1" style="min-width:160px;">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tabela</label>
+            <input name="tabela" value="@curTabela" placeholder="ex: leituras_hidrometro"
+                class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Ação</label>
+            <select name="acao"
+                class="bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors appearance-none pr-8 cursor-pointer">
+                <option value="" @(string.IsNullOrEmpty(curAcao) ? "selected" : "")>Todas</option>
+                @foreach (var op in new[] { "INSERT","UPDATE","DELETE","VALIDATE","CORRECT","REJECT","MANUAL" })
+                {
+                    <option value="@op" @(curAcao == op ? "selected" : "")>@op</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">De</label>
+            <input name="de" type="date" value="@curDe"
+                class="bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors [color-scheme:dark] cursor-pointer" />
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Até</label>
+            <input name="ate" type="date" value="@curAte"
+                class="bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors [color-scheme:dark] cursor-pointer" />
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit"
+                class="px-4 py-2 rounded-lg text-sm font-semibold bg-hbrk hover:opacity-90 transition-opacity cursor-pointer"
+                style="color:#0d0f14;">
+                Filtrar
+            </button>
+            @if (!string.IsNullOrEmpty(curTabela + curAcao + curDe + curAte))
+            {
+                <a href="/Admin/Auditoria"
+                   class="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 border border-hrim hover:border-slate-600 transition-colors">
+                    Limpar
+                </a>
+            }
+        </div>
+
     </div>
-    <div>
-        <label class="block text-xs text-gray-500 mb-1">Ação</label>
-        <select name="acao" class="border rounded px-3 py-1.5 text-sm">
-            <option value="">Todas</option>
-            <option>INSERT</option><option>UPDATE</option><option>DELETE</option>
-            <option>VALIDATE</option><option>CORRECT</option><option>REJECT</option><option>MANUAL</option>
-        </select>
-    </div>
-    <div>
-        <label class="block text-xs text-gray-500 mb-1">De</label>
-        <input name="de" type="date" class="border rounded px-3 py-1.5 text-sm" />
-    </div>
-    <div>
-        <label class="block text-xs text-gray-500 mb-1">Até</label>
-        <input name="ate" type="date" class="border rounded px-3 py-1.5 text-sm" />
-    </div>
-    <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Filtrar</button>
 </form>
 
-<!-- Tabela -->
-<div class="bg-white rounded-xl shadow overflow-x-auto">
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
-            <tr>
-                <th class="px-4 py-3 text-left">Data/Hora</th>
-                <th class="px-4 py-3 text-left">Usuário</th>
-                <th class="px-4 py-3 text-left">Tabela</th>
-                <th class="px-4 py-3 text-left">Ação</th>
-                <th class="px-4 py-3 text-left">Registro</th>
-                <th class="px-4 py-3 text-left">Origem</th>
-                <th class="px-4 py-3 text-left">Motivo</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            @foreach (var reg in registros)
-            {
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2 text-gray-500 whitespace-nowrap">@((DateTime)reg.criadoEm).ToString("dd/MM/yy HH:mm")</td>
-                    <td class="px-4 py-2">@(reg.usuario ?? "—")</td>
-                    <td class="px-4 py-2 font-mono text-xs">@(reg.tabela ?? "")</td>
-                    <td class="px-4 py-2">
-                        <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">@reg.acao</span>
-                    </td>
-                    <td class="px-4 py-2">@(reg.registroId ?? "—")</td>
-                    <td class="px-4 py-2 text-xs text-gray-400">@(reg.origem ?? "")</td>
-                    <td class="px-4 py-2 text-xs text-gray-500">@(reg.motivo ?? "")</td>
+@* ── Table ─────────────────────────────────────────────────────── *@
+<div class="bg-hsurf rounded-2xl border border-hrim overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-hrim">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Data/Hora</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuário</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Tabela</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Ação</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Registro</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Origem</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Motivo</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-    @if (!registros.Any())
-    {
-        <div class="text-center py-8 text-gray-400">Nenhum registro encontrado.</div>
-    }
+            </thead>
+            <tbody class="divide-y divide-hrim">
+                @foreach (var reg in registros)
+                {
+                    var acaoStr = reg.GetProperty("acao").GetString() ?? "";
+                    // registroId é int na API real e string no mock — GetRawText() funciona para ambos
+                    var regIdEl = reg.GetProperty("registroId");
+                    var registroIdStr = regIdEl.ValueKind == JsonValueKind.Number
+                        ? regIdEl.GetRawText()
+                        : (regIdEl.GetString() ?? "—");
+                    <tr class="hover:bg-hcard/50 transition-colors">
+                        <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap font-mono">
+                            @reg.GetProperty("criadoEm").GetDateTime().ToString("dd/MM/yy HH:mm")
+                        </td>
+                        <td class="px-4 py-3 text-slate-300 font-medium">@(reg.GetProperty("usuario").GetString() ?? "—")</td>
+                        <td class="px-4 py-3 text-slate-500 font-mono text-xs">@(reg.GetProperty("tabela").GetString() ?? "")</td>
+                        <td class="px-4 py-3">
+                            <span class="text-xs px-2 py-0.5 rounded-full border @AcaoCls(acaoStr)">@acaoStr</span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-500 text-xs font-mono">@registroIdStr</td>
+                        <td class="px-4 py-3 text-slate-600 text-xs">@(reg.GetProperty("origem").GetString() ?? "")</td>
+                        <td class="px-4 py-3 text-slate-500 text-xs max-w-xs truncate">@(reg.GetProperty("motivo").GetString() ?? "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!registros.Any())
+        {
+            <div class="text-center py-12">
+                <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v10a2 2 0 01-2 2h-4M9 17v4M9 17l-3 4"/>
+                </svg>
+                <p class="text-slate-500 text-sm">Nenhum registro encontrado para os filtros selecionados.</p>
+            </div>
+        }
+
+    </div>
 </div>
 
-<!-- Paginação -->
-<div class="flex justify-between mt-4 text-sm">
-    @if (pagina > 1)
-    {
-        <a href="?pagina=@(pagina - 1)" class="text-blue-600 hover:underline">Anterior</a>
-    }
-    else { <span></span> }
-    <a href="?pagina=@(pagina + 1)" class="text-blue-600 hover:underline">Próxima</a>
+@* ── Pagination ────────────────────────────────────────────────── *@
+<div class="flex items-center justify-between mt-5">
+    <span class="text-xs text-slate-600">Página @pagina</span>
+    <div class="flex gap-2">
+        @if (pagina > 1)
+        {
+            <a href="?pagina=@(pagina - 1)@filterQs"
+               class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 border border-hrim rounded-lg px-3 py-1.5 hover:border-slate-600 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Anterior
+            </a>
+        }
+        @if (registros.Any())
+        {
+            <a href="?pagina=@(pagina + 1)@filterQs"
+               class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 border border-hrim rounded-lg px-3 py-1.5 hover:border-slate-600 transition-colors">
+                Próxima
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </a>
+        }
+    </div>
 </div>

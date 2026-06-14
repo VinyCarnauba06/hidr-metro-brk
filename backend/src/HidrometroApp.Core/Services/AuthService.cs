@@ -20,14 +20,14 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        var cpf = request.Cpf.Replace(".", "").Replace("-", "");
+        var email = request.Email.Trim().ToLowerInvariant();
 
         var usuario = await _db.Usuarios
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Cpf == cpf && u.Ativo);
+            .FirstOrDefaultAsync(u => u.Email == email && u.Ativo);
 
         if (usuario == null || !BCrypt.Net.BCrypt.Verify(request.Senha, usuario.SenhaHash))
-            throw new UnauthorizedException("CPF ou senha inválidos");
+            throw new UnauthorizedException("Email ou senha inválidos");
 
         var (tokenStr, expira) = _token.Gerar(usuario);
 

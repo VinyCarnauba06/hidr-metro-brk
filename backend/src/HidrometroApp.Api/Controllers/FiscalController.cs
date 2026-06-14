@@ -72,6 +72,11 @@ public class FiscalController : ControllerBase
     [HttpPost("leitura/upload")]
     public async Task<IActionResult> UploadFoto([FromForm] int osId, [FromForm] int unidadeId, IFormFile foto)
     {
+        if (!Request.HasFormContentType ||
+            Request.ContentType?.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase) != true)
+            return StatusCode(StatusCodes.Status415UnsupportedMediaType,
+                new { message = "Content-Type deve ser multipart/form-data" });
+
         if (foto == null || foto.Length == 0)
             return BadRequest(new { message = "Foto obrigatória" });
 

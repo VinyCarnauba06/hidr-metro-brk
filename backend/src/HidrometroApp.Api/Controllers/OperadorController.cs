@@ -28,8 +28,22 @@ public class OperadorController : ControllerBase
     [HttpGet("ordens-aguardando")]
     public async Task<IActionResult> OrdensAguardando()
     {
-        var ordens = await _db.OrdensServico
-            .Include(o => o.Condominio)
+        var operadorId = ObterUsuarioId();
+        var isAdmin = User.IsInRole("Admin");
+
+        IQueryable<Core.Models.OrdemServico> query = _db.OrdensServico.Include(o => o.Condominio);
+
+        if (!isAdmin)
+        {
+            var condominioIds = await _db.OperadorCondominios
+                .Where(oc => oc.OperadorId == operadorId)
+                .Select(oc => oc.CondominioId)
+                .ToListAsync();
+
+            query = query.Where(o => condominioIds.Contains(o.CondominioId));
+        }
+
+        var ordens = await query
             .Where(o => o.Status == Core.Models.StatusOS.EmProgresso || o.Status == Core.Models.StatusOS.Validada)
             .Select(o => new
             {
@@ -88,7 +102,7 @@ public class OperadorController : ControllerBase
         }
         catch (NotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (LeituraInvalidaException ex) { return UnprocessableEntity(new { message = ex.Message }); }
-        catch (ValidationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (HidrometroValidationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
     [HttpPatch("leituras/{id}/rejeitar")]
@@ -99,6 +113,7 @@ public class OperadorController : ControllerBase
             return Ok(await _leitura.RejeitarAsync(id, ObterUsuarioId(), request));
         }
         catch (NotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (HidrometroValidationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
     [HttpGet("os/{osId}/progresso")]
@@ -116,6 +131,10 @@ public class OperadorController : ControllerBase
     {
         try
         {
+            var progresso = await _leitura.ObterProgressoAsync(osId);
+            if (progresso.FaltandoRegistrar > 0)
+                return BadRequest(new { message = $"OS incompleta: {progresso.FaltandoRegistrar} unidade(s) sem leitura registrada." });
+
             var bytes = await _relatorio.GerarExcelAsync(osId);
             return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"leituras_os{osId}_{DateTime.Now:yyyyMMdd}.xlsx");
@@ -128,6 +147,10 @@ public class OperadorController : ControllerBase
     {
         try
         {
+            var progresso = await _leitura.ObterProgressoAsync(osId);
+            if (progresso.FaltandoRegistrar > 0)
+                return BadRequest(new { message = $"OS incompleta: {progresso.FaltandoRegistrar} unidade(s) sem leitura registrada." });
+
             var bytes = await _relatorio.GerarPdfAsync(osId);
             return File(bytes, "application/pdf", $"leituras_os{osId}_{DateTime.Now:yyyyMMdd}.pdf");
         }

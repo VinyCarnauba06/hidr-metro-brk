@@ -19,6 +19,15 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.2.0" />
   </ItemGroup>
 
+  <!-- Services que dependem de HidrometroDbContext ficam fisicamente em Core/Services mas compilam aqui -->
+  <ItemGroup>
+    <Compile Include="..\HidrometroApp.Core\Services\AuthService.cs" />
+    <Compile Include="..\HidrometroApp.Core\Services\AuditoriaService.cs" />
+    <Compile Include="..\HidrometroApp.Core\Services\AnomaliaService.cs" />
+    <Compile Include="..\HidrometroApp.Core\Services\LeituraService.cs" />
+    <Compile Include="..\HidrometroApp.Core\Services\RelatorioService.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\HidrometroApp.Core\HidrometroApp.Core.csproj" />
   </ItemGroup>

@@ -3,6 +3,7 @@ using HidrometroApp.Core.Exceptions;
 using HidrometroApp.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HidrometroApp.Api.Controllers;
 
@@ -19,6 +20,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         try
@@ -46,7 +48,7 @@ public class AuthController : ControllerBase
         {
             usuario.Id,
             usuario.Nome,
-            usuario.Cpf,
+            usuario.Email,
             Perfil = usuario.Perfil.ToString()
         });
     }

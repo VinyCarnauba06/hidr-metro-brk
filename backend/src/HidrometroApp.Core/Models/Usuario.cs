@@ -4,7 +4,7 @@ public class Usuario
 {
     public int Id { get; set; }
     public string Nome { get; set; } = string.Empty;
-    public string Cpf { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
     public string SenhaHash { get; set; } = string.Empty;
     public PerfilUsuario Perfil { get; set; }
     public bool Ativo { get; set; } = true;
@@ -13,6 +13,7 @@ public class Usuario
     public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
     public ICollection<LeituraHidrometro> LeiturasRegistradas { get; set; } = new List<LeituraHidrometro>();
     public ICollection<LeituraHidrometro> LeiturasValidadas { get; set; } = new List<LeituraHidrometro>();
+    public ICollection<OperadorCondominio> CondominiosAtribuidos { get; set; } = new List<OperadorCondominio>();
 }
 
 public enum PerfilUsuario

@@ -1,0 +1,106 @@
+@{
+    ViewData["Title"] = "Usuários";
+    var lista        = (IEnumerable<JsonElement>)Model;
+    var erroViewBag  = ViewBag.Erro as string;
+}
+
+@if (!string.IsNullOrEmpty(erroViewBag))
+{
+    <div class="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+        <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p class="text-sm text-red-400">@erroViewBag</p>
+    </div>
+}
+
+<div class="mb-8 flex items-end justify-between">
+    <div>
+        <h1 class="font-syne font-bold text-2xl text-slate-100">Usuários</h1>
+        <p class="text-slate-500 text-sm mt-1">@lista.Count() cadastrados</p>
+    </div>
+    <button disabled
+        class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border
+               bg-hbrk/10 text-hbrk border-hbrk/30 opacity-50 cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Usuário
+    </button>
+</div>
+
+<div class="bg-hsurf rounded-2xl border border-hrim overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-hrim">
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Nome</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Perfil</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                    <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Último acesso</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-hrim">
+                @foreach (var u in lista)
+                {
+                    // "ativo" e "ultimoAcesso" só existem no mock; API real filtra só ativos e expõe "criadoEm"
+                    var ativo  = !u.TryGetProperty("ativo", out var aEl) || aEl.GetBoolean();
+                    var perfil = u.GetProperty("perfil").GetString() ?? "";
+                    var nome   = u.GetProperty("nome").GetString() ?? "?";
+                    DateTime acesso;
+                    if (u.TryGetProperty("ultimoAcesso", out var uaEl) && uaEl.ValueKind != JsonValueKind.Null)
+                        acesso = uaEl.GetDateTime();
+                    else if (u.TryGetProperty("criadoEm", out var ceEl))
+                        acesso = ceEl.GetDateTime();
+                    else
+                        acesso = DateTime.MinValue;
+
+                    string perfilCls = perfil switch {
+                        "Admin"    => "bg-violet-500/15 text-violet-400 border-violet-500/30",
+                        "Operador" => "bg-blue-500/15 text-blue-400 border-blue-500/30",
+                        "Fiscal"   => "bg-hbrk/15 text-hbrk border-hbrk/30",
+                        _          => "bg-slate-500/15 text-slate-400 border-slate-500/30",
+                    };
+
+                    <tr class="hover:bg-hcard/40 transition-colors @(ativo ? "" : "opacity-50")">
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-hcard border border-hrim flex items-center justify-center shrink-0">
+                                    <span class="text-xs font-bold font-syne text-slate-400">
+                                        @nome.Split(' ')[0][0].ToString().ToUpper()
+                                    </span>
+                                </div>
+                                <span class="font-medium text-slate-200">@nome</span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-3.5 text-slate-500 text-xs font-mono">@u.GetProperty("email").GetString()</td>
+                        <td class="px-5 py-3.5">
+                            <span class="text-xs px-2 py-0.5 rounded-full border @perfilCls">@perfil</span>
+                        </td>
+                        <td class="px-5 py-3.5">
+                            @if (ativo)
+                            {
+                                <span class="text-xs bg-hbrk/15 text-hbrk border border-hbrk/30 px-2 py-0.5 rounded-full">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">Inativo</span>
+                            }
+                        </td>
+                        <td class="px-5 py-3.5 text-slate-500 text-xs font-mono">
+                            @acesso.ToString("dd/MM/yy HH:mm")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!lista.Any())
+        {
+            <div class="text-center py-12">
+                <p class="text-slate-500 text-sm">Nenhum usuário cadastrado.</p>
+            </div>
+        }
+    </div>
+</div>

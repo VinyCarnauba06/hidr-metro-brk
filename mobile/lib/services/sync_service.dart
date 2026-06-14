@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import 'storage_service.dart';
@@ -11,7 +12,24 @@ enum SyncResultado {
   semConexao,
 }
 
+enum SyncStatus {
+  ocioso,
+  sincronizando,
+  sucesso,
+  erro,
+}
+
 class SyncService {
+  /// ValueNotifier reativo para que qualquer widget escute o estado de sync.
+  /// Uso: `ValueListenableBuilder<SyncStatus>(valueListenable: SyncService.status, ...)`
+  static final ValueNotifier<SyncStatus> status = ValueNotifier(SyncStatus.ocioso);
+
+  /// Quantidade de itens processados na última operação de sync.
+  static final ValueNotifier<int> itensProcessados = ValueNotifier(0);
+
+  /// Total de itens na fila na última operação de sync.
+  static final ValueNotifier<int> itensTotal = ValueNotifier(0);
+
   // Processa todas as leituras pendentes no SQLite.
   // Garantias:
   //   - Um item só é removido da fila quando sincronizado = 1 (após confirmação da API).
@@ -21,15 +39,25 @@ class SyncService {
   static Future<SyncResultado> sincronizarPendentes() async {
     if (!AuthService.estaAutenticado) return SyncResultado.sessaoExpirada;
 
+    // Atualiza status para sincronizando
+    status.value = SyncStatus.sincronizando;
+    itensProcessados.value = 0;
+    itensTotal.value = 0;
+
     List<Map<String, dynamic>> pendentes;
     try {
       pendentes = await StorageService.listarPendentesParaSync();
     } catch (_) {
+      status.value = SyncStatus.erro;
       return SyncResultado.semConexao;
     }
 
-    if (pendentes.isEmpty) return SyncResultado.semPendentes;
+    if (pendentes.isEmpty) {
+      status.value = SyncStatus.ocioso;
+      return SyncResultado.semPendentes;
+    }
 
+    itensTotal.value = pendentes.length;
     int enviados = 0;
     int falhas = 0;
 
@@ -40,10 +68,12 @@ class SyncService {
         await _enviarItem(item);
         await StorageService.marcarSincronizado(id);
         enviados++;
+        itensProcessados.value = enviados;
       } on TokenExpiradoException {
         // JWT expirado: pausa a fila e faz logout preservando SQLite.
         // O usuario precisará fazer login novamente; os pendentes serão enviados depois.
         AuthService.logout();
+        status.value = SyncStatus.erro;
         return SyncResultado.sessaoExpirada;
       } on SocketException {
         await StorageService.marcarErroSync(id, 'sem_conexao');
@@ -55,8 +85,22 @@ class SyncService {
       }
     }
 
-    if (falhas == 0) return SyncResultado.sucesso;
-    if (enviados == 0) return SyncResultado.semConexao;
+    if (falhas == 0) {
+      status.value = SyncStatus.sucesso;
+      // Volta para ocioso após 3 segundos
+      Future.delayed(const Duration(seconds: 3), () {
+        if (status.value == SyncStatus.sucesso) {
+          status.value = SyncStatus.ocioso;
+        }
+      });
+      return SyncResultado.sucesso;
+    }
+    if (enviados == 0) {
+      status.value = SyncStatus.erro;
+      return SyncResultado.semConexao;
+    }
+
+    status.value = SyncStatus.erro;
     return SyncResultado.parcial;
   }
 

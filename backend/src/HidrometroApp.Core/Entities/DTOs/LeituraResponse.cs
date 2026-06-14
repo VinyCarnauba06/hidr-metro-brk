@@ -1,12 +1,5 @@
 namespace HidrometroApp.Core.Entities.DTOs;
 
-public class UploadFotoRequest
-{
-    public int OsId { get; set; }
-    public int UnidadeId { get; set; }
-    public IFormFile Foto { get; set; } = null!;
-}
-
 public class LeituraResponse
 {
     public int Id { get; set; }

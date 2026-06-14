@@ -14,7 +14,7 @@ public static class DbSeeder
         var admin = new Usuario
         {
             Nome = "Administrador",
-            Cpf = "00000000000",
+            Email = "admin@prolar.com",
             SenhaHash = senhaHash,
             Perfil = PerfilUsuario.Admin,
             Ativo = true
@@ -23,7 +23,7 @@ public static class DbSeeder
         var operador = new Usuario
         {
             Nome = "Operador Padrão",
-            Cpf = "11111111111",
+            Email = "operador@prolar.com",
             SenhaHash = BCrypt.Net.BCrypt.HashPassword("Operador@123"),
             Perfil = PerfilUsuario.Operador,
             Ativo = true
@@ -32,7 +32,7 @@ public static class DbSeeder
         var fiscal = new Usuario
         {
             Nome = "Fiscal Padrão",
-            Cpf = "22222222222",
+            Email = "fiscal@prolar.com",
             SenhaHash = BCrypt.Net.BCrypt.HashPassword("Fiscal@123"),
             Perfil = PerfilUsuario.Fiscal,
             Ativo = true
@@ -61,6 +61,23 @@ public static class DbSeeder
                 Ativa = true
             });
         }
+
+        await context.SaveChangesAsync();
+
+        context.OrdensServico.Add(new OrdemServico
+        {
+            CondominioId = condo.Id,
+            FiscalId = fiscal.Id,
+            Mes = DateTime.Now.Month,
+            Ano = DateTime.Now.Year,
+            Status = StatusOS.Aberta
+        });
+
+        context.OperadorCondominios.Add(new OperadorCondominio
+        {
+            OperadorId = operador.Id,
+            CondominioId = condo.Id
+        });
 
         await context.SaveChangesAsync();
     }

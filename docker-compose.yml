@@ -8,13 +8,16 @@ services:
     environment:
       POSTGRES_DB: hidrometro_brk
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-senha123}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-VLuke0605*}
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./database/seeds/usuarios_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -30,13 +33,30 @@ services:
       DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:-senha123}@db:5432/hidrometro_brk
       JWT_SECRET: ${JWT_SECRET:-mude-este-secret-em-producao-minimo-32-chars}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-8}
-      AZURE_VISION_ENDPOINT: ${AZURE_VISION_ENDPOINT:-}
-      AZURE_VISION_KEY: ${AZURE_VISION_KEY:-}
+      STORAGE_PATH: /app/storage/fotos
+      LOG_PATH: /app/storage/logs/app.log
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
     volumes:
       - fotos_data:/app/storage/fotos
       - logs_data:/app/storage/logs
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: hidrometro_web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      ASPNETCORE_URLS: http://+:5001
+      ASPNETCORE_ENVIRONMENT: Production
+      API_URL: ${API_URL:-http://api:5000}
+    depends_on:
+      - api
 
 volumes:
   pg_data:

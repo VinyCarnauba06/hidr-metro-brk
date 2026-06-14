@@ -7,10 +7,11 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(opts =>
     {
-        opts.LoginPath = "/Auth/Login";
-        opts.LogoutPath = "/Auth/Logout";
-        opts.ExpireTimeSpan = TimeSpan.FromHours(8);
-        opts.SlidingExpiration = true;
+        opts.LoginPath          = "/Auth/Login";
+        opts.LogoutPath         = "/Auth/Logout";
+        opts.AccessDeniedPath   = "/Auth/Login";
+        opts.ExpireTimeSpan     = TimeSpan.FromHours(8);
+        opts.SlidingExpiration  = true;
     });
 
 builder.Services.AddHttpClient("api", c =>
@@ -23,6 +24,12 @@ var app = builder.Build();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapDefaultControllerRoute();
+app.MapControllerRoute(
+    name: "operador",
+    pattern: "Operador/{action=Index}/{id?}",
+    defaults: new { controller = "Operador" });
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Auth}/{action=Login}/{id?}");
 
 app.Run();

@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using global::Azure;
+using global::Azure.AI.Vision.ImageAnalysis;
 using HidrometroApp.Core.Exceptions;
 using HidrometroApp.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -44,15 +46,15 @@ public class AzureVisionService : IAzureVisionService
             }
 
             // Integração real com Azure Computer Vision
-            using var client = new Azure.AI.Vision.ImageAnalysis.ImageAnalysisClient(
+            var client = new ImageAnalysisClient(
                 new Uri(endpoint),
-                new Azure.AzureKeyCredential(key)
+                new AzureKeyCredential(key)
             );
 
             using var stream = new MemoryStream(fotoBytes);
             var result = await client.AnalyzeAsync(
-                Azure.AI.Vision.ImageAnalysis.BinaryData.FromBytes(fotoBytes),
-                Azure.AI.Vision.ImageAnalysis.VisualFeatures.Read
+                BinaryData.FromBytes(fotoBytes),
+                VisualFeatures.Read
             );
 
             return ParsearResultado(result.Value);
@@ -98,7 +100,7 @@ public class AzureVisionService : IAzureVisionService
     private static readonly Regex ReContemLetra =
         new(@"[A-Za-zÀ-ÿ]", RegexOptions.Compiled);
 
-    private LeituraResultadoIa ParsearResultado(Azure.AI.Vision.ImageAnalysis.ImageAnalysisResult result)
+    private LeituraResultadoIa ParsearResultado(ImageAnalysisResult result)
     {
         var linhasBrutas = result.Read?.Blocks
             .SelectMany(b => b.Lines)

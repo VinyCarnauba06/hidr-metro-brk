@@ -33,11 +33,11 @@ public class AuthServiceTests
     {
         var db = CriarDb();
         var hash = BCrypt.Net.BCrypt.HashPassword("Senha@123");
-        db.Usuarios.Add(new Usuario { Nome = "Teste", Cpf = "12345678901", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
+        db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
         var svc = new AuthService(db, MockToken());
-        var result = await svc.LoginAsync(new LoginRequest { Cpf = "12345678901", Senha = "Senha@123" });
+        var result = await svc.LoginAsync(new LoginRequest { Email = "fiscal@teste.com", Senha = "Senha@123" });
 
         Assert.NotEmpty(result.Token);
         Assert.Equal("Fiscal", result.Perfil);
@@ -48,13 +48,13 @@ public class AuthServiceTests
     {
         var db = CriarDb();
         var hash = BCrypt.Net.BCrypt.HashPassword("Senha@123");
-        db.Usuarios.Add(new Usuario { Nome = "Teste", Cpf = "12345678901", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
+        db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
         var svc = new AuthService(db, MockToken());
 
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
-            svc.LoginAsync(new LoginRequest { Cpf = "12345678901", Senha = "SenhaErrada" }));
+            svc.LoginAsync(new LoginRequest { Email = "fiscal@teste.com", Senha = "SenhaErrada" }));
     }
 
     [Fact]
@@ -62,26 +62,26 @@ public class AuthServiceTests
     {
         var db = CriarDb();
         var hash = BCrypt.Net.BCrypt.HashPassword("Senha@123");
-        db.Usuarios.Add(new Usuario { Nome = "Inativo", Cpf = "99999999999", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = false });
+        db.Usuarios.Add(new Usuario { Nome = "Inativo", Email = "inativo@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = false });
         await db.SaveChangesAsync();
 
         var svc = new AuthService(db, MockToken());
 
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
-            svc.LoginAsync(new LoginRequest { Cpf = "99999999999", Senha = "Senha@123" }));
+            svc.LoginAsync(new LoginRequest { Email = "inativo@teste.com", Senha = "Senha@123" }));
     }
 
     [Fact]
-    public async Task Login_CpfComMascara_Normaliza()
+    public async Task Login_EmailCaseInsensitivo_Normaliza()
     {
         var db = CriarDb();
         var hash = BCrypt.Net.BCrypt.HashPassword("Senha@123");
-        db.Usuarios.Add(new Usuario { Nome = "Teste", Cpf = "12345678901", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
+        db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
         var svc = new AuthService(db, MockToken());
-        // CPF com pontuação deve ser normalizado
-        var result = await svc.LoginAsync(new LoginRequest { Cpf = "123.456.789-01", Senha = "Senha@123" });
+        // Email com letras maiúsculas deve ser normalizado para minúsculas
+        var result = await svc.LoginAsync(new LoginRequest { Email = "FISCAL@TESTE.COM", Senha = "Senha@123" });
 
         Assert.NotEmpty(result.Token);
     }

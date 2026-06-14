@@ -22,11 +22,45 @@ public class AdminController : ControllerBase
         _auditoria = auditoria;
     }
 
+    [HttpGet("condominios")]
+    public async Task<IActionResult> ListarCondominios()
+    {
+        var data = await _db.Condominios
+            .OrderBy(c => c.Nome)
+            .Select(c => new
+            {
+                c.Id,
+                c.Nome,
+                c.Endereco,
+                TotalUnidades    = c.Unidades.Count(u => u.Ativa),
+                TipoMedidor      = c.TipoMedidor.ToString(),
+                OsAtiva          = c.OrdensServico.Any(o => o.Status == StatusOS.Aberta || o.Status == StatusOS.EmProgresso),
+                TotalLeituras    = c.OrdensServico
+                    .Where(o => o.Status == StatusOS.Aberta || o.Status == StatusOS.EmProgresso)
+                    .SelectMany(o => o.Leituras).Count(),
+                LeiturasValidadas = c.OrdensServico
+                    .Where(o => o.Status == StatusOS.Aberta || o.Status == StatusOS.EmProgresso)
+                    .SelectMany(o => o.Leituras).Count(l => l.Status == StatusLeitura.Validado)
+            })
+            .ToListAsync();
+
+        return Ok(data.Select(c => new
+        {
+            c.Id,
+            c.Nome,
+            c.Endereco,
+            c.TotalUnidades,
+            c.TipoMedidor,
+            c.OsAtiva,
+            Progresso = c.TotalLeituras == 0 ? 0 : c.LeiturasValidadas * 100 / c.TotalLeituras
+        }));
+    }
+
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard()
     {
-        var hoje = DateTime.Today;
-        var inicioMes = new DateTime(hoje.Year, hoje.Month, 1);
+        var hoje = DateTime.UtcNow;
+        var inicioMes = new DateTime(hoje.Year, hoje.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         var stats = new
         {
@@ -119,20 +153,21 @@ public class AdminController : ControllerBase
     {
         return Ok(await _db.Usuarios
             .Where(u => u.Ativo)
-            .Select(u => new { u.Id, u.Nome, u.Cpf, Perfil = u.Perfil.ToString(), u.CriadoEm })
+            .Select(u => new { u.Id, u.Nome, u.Email, Perfil = u.Perfil.ToString(), u.CriadoEm })
             .ToListAsync());
     }
 
     [HttpPost("usuarios")]
     public async Task<IActionResult> CriarUsuario([FromBody] CriarUsuarioRequest request)
     {
-        if (await _db.Usuarios.AnyAsync(u => u.Cpf == request.Cpf))
-            return Conflict(new { message = "CPF já cadastrado" });
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (await _db.Usuarios.AnyAsync(u => u.Email == email))
+            return Conflict(new { message = "Email já cadastrado" });
 
         var usuario = new Usuario
         {
             Nome = request.Nome,
-            Cpf = request.Cpf.Replace(".", "").Replace("-", ""),
+            Email = email,
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha),
             Perfil = Enum.Parse<PerfilUsuario>(request.Perfil, ignoreCase: true),
             Ativo = true
@@ -148,6 +183,36 @@ public class AdminController : ControllerBase
         return CreatedAtAction(nameof(CriarUsuario), new { id = usuario.Id }, new { usuario.Id, usuario.Nome, usuario.Perfil });
     }
 
+    [HttpPost("operadores/{id}/condominios")]
+    public async Task<IActionResult> AtribuirCondominios(int id, [FromBody] AtribuirCondominiosRequest request)
+    {
+        var operador = await _db.Usuarios.FirstOrDefaultAsync(u => u.Id == id && u.Perfil == PerfilUsuario.Operador && u.Ativo);
+        if (operador == null) return NotFound(new { message = "Operador não encontrado" });
+
+        var existentes = await _db.OperadorCondominios.Where(oc => oc.OperadorId == id).ToListAsync();
+        _db.OperadorCondominios.RemoveRange(existentes);
+
+        foreach (var condoId in request.CondominioIds)
+        {
+            _db.OperadorCondominios.Add(new OperadorCondominio { OperadorId = id, CondominioId = condoId });
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpGet("operadores/{id}/condominios")]
+    public async Task<IActionResult> ListarCondominiosOperador(int id)
+    {
+        var condominios = await _db.OperadorCondominios
+            .Where(oc => oc.OperadorId == id)
+            .Include(oc => oc.Condominio)
+            .Select(oc => new { oc.CondominioId, oc.Condominio.Nome })
+            .ToListAsync();
+
+        return Ok(condominios);
+    }
+
     private int ObterUsuarioId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -157,4 +222,5 @@ public class AdminController : ControllerBase
 
 public record CriarCondominioRequest(string Nome, string? Endereco, int QtdUnidades, string TipoMedidor);
 public record CriarOrdemRequest(int CondominioId, int Mes, int Ano);
-public record CriarUsuarioRequest(string Nome, string Cpf, string Senha, string Perfil);
+public record CriarUsuarioRequest(string Nome, string Email, string Senha, string Perfil);
+public record AtribuirCondominiosRequest(List<int> CondominioIds);

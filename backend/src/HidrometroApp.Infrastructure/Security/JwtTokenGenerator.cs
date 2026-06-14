@@ -31,7 +31,7 @@ public class JwtTokenGenerator
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.Nome),
             new Claim(ClaimTypes.Role, usuario.Perfil.ToString()),
-            new Claim("cpf", usuario.Cpf),
+            new Claim("email", usuario.Email),
         };
 
         var token = new JwtSecurityToken(
