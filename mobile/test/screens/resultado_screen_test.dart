@@ -32,14 +32,12 @@ void main() {
         permiteRecurso: false,
       );
 
-      bool proximaChamada = false;
-
       await tester.pumpWidget(
         MaterialApp(
           home: ResultadoScreen(
             leitura: leituraComVazamento,
             os: osTest,
-            onProxima: () => proximaChamada = true,
+            onProxima: () {},
           ),
         ),
       );

@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/leitura_model.dart';
 import '../models/ordem_servico_model.dart';
 import '../services/api_service.dart';
-import '../services/storage_service.dart';
 import 'resultado_screen.dart';
 
 class CameraScreen extends StatefulWidget {
