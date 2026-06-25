@@ -36,7 +36,7 @@ public class AuthServiceTests
         db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
-        var svc = new AuthService(db, MockToken());
+        var svc = new AuthService(db, MockToken(), new Mock<IGoogleTokenValidator>().Object);
         var result = await svc.LoginAsync(new LoginRequest { Email = "fiscal@teste.com", Senha = "Senha@123" });
 
         Assert.NotEmpty(result.Token);
@@ -51,7 +51,7 @@ public class AuthServiceTests
         db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
-        var svc = new AuthService(db, MockToken());
+        var svc = new AuthService(db, MockToken(), new Mock<IGoogleTokenValidator>().Object);
 
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
             svc.LoginAsync(new LoginRequest { Email = "fiscal@teste.com", Senha = "SenhaErrada" }));
@@ -65,7 +65,7 @@ public class AuthServiceTests
         db.Usuarios.Add(new Usuario { Nome = "Inativo", Email = "inativo@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = false });
         await db.SaveChangesAsync();
 
-        var svc = new AuthService(db, MockToken());
+        var svc = new AuthService(db, MockToken(), new Mock<IGoogleTokenValidator>().Object);
 
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
             svc.LoginAsync(new LoginRequest { Email = "inativo@teste.com", Senha = "Senha@123" }));
@@ -79,7 +79,7 @@ public class AuthServiceTests
         db.Usuarios.Add(new Usuario { Nome = "Teste", Email = "fiscal@teste.com", SenhaHash = hash, Perfil = PerfilUsuario.Fiscal, Ativo = true });
         await db.SaveChangesAsync();
 
-        var svc = new AuthService(db, MockToken());
+        var svc = new AuthService(db, MockToken(), new Mock<IGoogleTokenValidator>().Object);
         // Email com letras maiúsculas deve ser normalizado para minúsculas
         var result = await svc.LoginAsync(new LoginRequest { Email = "FISCAL@TESTE.COM", Senha = "Senha@123" });
 

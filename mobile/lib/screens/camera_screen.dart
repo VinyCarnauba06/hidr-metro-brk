@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/ordem_servico_model.dart';
 import '../services/api_service.dart';
 import '../services/photo_validator.dart';
+import '../widgets/framing_overlay.dart';
 import 'resultado_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   final _picker = ImagePicker();
   bool _enviando = false;
+  bool _fotoborrada = false;
   Map<String, dynamic>? _progresso;
 
   @override
@@ -56,9 +58,11 @@ class _CameraScreenState extends State<CameraScreen> {
     final fotoBytes = await arquivo.readAsBytes();
     final decoded = img.decodeImage(fotoBytes);
     if (decoded != null && PhotoValidator.calcularNitidez(decoded) < 100) {
+      setState(() => _fotoborrada = true);
       _mostrarErro('Foto borrada. Tente novamente com a câmera mais estável.');
       return;
     }
+    setState(() => _fotoborrada = false);
 
     setState(() => _enviando = true);
     try {
@@ -132,71 +136,79 @@ class _CameraScreenState extends State<CameraScreen> {
         backgroundColor: const Color(0xFF1D4ED8),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Progresso
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        children: [
+          // Main content
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                // Progresso
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('$registradas / $total leituras', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text('${(pct * 100).toInt()}%', style: const TextStyle(color: Color(0xFF1D4ED8), fontWeight: FontWeight.bold)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('$registradas / $total leituras', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('${(pct * 100).toInt()}%', style: const TextStyle(color: Color(0xFF1D4ED8), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(value: pct, backgroundColor: Colors.blue.shade100, color: const Color(0xFF1D4ED8)),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${total - registradas} faltando',
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(value: pct, backgroundColor: Colors.blue.shade100, color: const Color(0xFF1D4ED8)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${total - registradas} faltando',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Icon(Icons.camera_alt, size: 80, color: Color(0xFF1D4ED8)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Aponte a câmera para o hidrômetro',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Certifique-se de boa iluminação e foco no mostrador',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _enviando ? null : _tirarFoto,
+                    icon: _enviando
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.camera_alt, color: Colors.white),
+                    label: Text(
+                      _enviando ? 'Processando...' : 'Fotografar Hidrômetro',
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                  ],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1D4ED8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+              ],
             ),
-            const SizedBox(height: 32),
-            const Icon(Icons.camera_alt, size: 80, color: Color(0xFF1D4ED8)),
-            const SizedBox(height: 16),
-            const Text(
-              'Aponte a câmera para o hidrômetro',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Certifique-se de boa iluminação e foco no mostrador',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _enviando ? null : _tirarFoto,
-                icon: _enviando
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.camera_alt, color: Colors.white),
-                label: Text(
-                  _enviando ? 'Processando...' : 'Fotografar Hidrômetro',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1D4ED8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          ),
+          // Framing overlay — shown when blur was detected on last capture
+          if (_fotoborrada)
+            IgnorePointer(child: FramingOverlay(isBlurry: _fotoborrada)),
+        ],
       ),
     );
   }

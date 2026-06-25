@@ -5,6 +5,8 @@ using HidrometroApp.Core.Models;
 using HidrometroApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace HidrometroApp.Core.Services;
 
@@ -51,6 +53,9 @@ public class LeituraService : ILeituraService
 
         if (tentativasAnteriores >= 3)
             throw new FotoRejeitadaException("Máximo de 3 tentativas atingido. Use o recurso manual.");
+
+        // Corrigir orientação EXIF antes de salvar e enviar ao OCR
+        fotoBytes = CorrigirOrientacaoExif(fotoBytes);
 
         // Salvar foto localmente
         var fotoPath = await SalvarFotoAsync(fotoBytes, nomeArquivo, os.CondominioId);
@@ -325,6 +330,24 @@ public class LeituraService : ILeituraService
         if (leitura?.FotoPath == null) return null;
 
         return await _fotoStorage.ObterAsync(leitura.FotoPath);
+    }
+
+    public static byte[] CorrigirOrientacaoExif(byte[] bytes)
+    {
+        try
+        {
+            using var input = new MemoryStream(bytes);
+            using var image = SixLabors.ImageSharp.Image.Load(input);
+            image.Mutate(x => x.AutoOrient());
+            using var output = new MemoryStream();
+            image.SaveAsJpeg(output);
+            return output.ToArray();
+        }
+        catch
+        {
+            // Se não for imagem reconhecida ou não tiver EXIF, retornar bytes originais
+            return bytes;
+        }
     }
 
     private async Task<string> SalvarFotoAsync(byte[] bytes, string nomeArquivo, int condominioId)

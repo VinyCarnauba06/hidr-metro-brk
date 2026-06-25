@@ -17,21 +17,10 @@
 | #4 | Outliers via Z-score | `AnomaliaService.cs:VerificarOutlierAsync` |
 | #6 | Quality flag (Ok/BaixaConfianca/Manual/Rejeitado3x) | `LeituraHidrometro.cs:QualidadeFoto` |
 | #7 | Histórico de consumo | `LeituraService.cs:RegistrarHistoricoConsumoAsync` |
+| #9 | Rotação automática de foto via EXIF | `LeituraService.cs:CorrigirOrientacaoExif` (SixLabors.ImageSharp) |
 
 ## P3 — Pendentes
 
 | GAP | Descrição | Status |
 |-----|-----------|--------|
-| #5 | Sazonalidade | Fase 4 |
-| #9 | Rotação automática de foto | Fase 4 — Azure Vision detecta orientação |
-
-## Como adicionar GAP #9 (Rotação)
-
-```csharp
-// Em AzureVisionService.cs, antes de enviar pra IA:
-var metadata = await ReadExifOrientation(fotoBytes);
-if (metadata.Rotation != 0)
-    fotoBytes = RotateImage(fotoBytes, metadata.Rotation);
-```
-
-Use `ImageSharp` ou `SkiaSharp` para rotacionar.
+| #5 | Sazonalidade na detecção de anomalia | Fase 4 |

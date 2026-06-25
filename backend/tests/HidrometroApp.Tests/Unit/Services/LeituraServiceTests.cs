@@ -10,6 +10,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Xunit;
 
 namespace HidrometroApp.Tests.Unit.Services;
@@ -246,5 +251,42 @@ public class LeituraServiceTests
         Assert.NotNull(leituraGravada);
         Assert.Equal(StatusLeitura.Rejeitada, leituraGravada.Status);
         Assert.Equal(0.30m, leituraGravada.ConfiancaIa);
+    }
+
+    // ── EXIF AutoOrient ──────────────────────────────────────────────────────
+
+    [Fact]
+    public void UploadFoto_ImagemRotacionada90_OcrRecebeImagemCorreta()
+    {
+        // Cria imagem 100x50 (landscape) com EXIF indicando rotação 90° (Orientation=6)
+        using var image = new Image<Rgb24>(100, 50);
+        var exif = new ExifProfile();
+        exif.SetValue(ExifTag.Orientation, (ushort)6); // 90° clockwise
+        image.Metadata.ExifProfile = exif;
+
+        byte[] bytesRotacionados;
+        using (var ms = new MemoryStream())
+        {
+            image.SaveAsJpeg(ms);
+            bytesRotacionados = ms.ToArray();
+        }
+
+        var corrigidos = LeituraService.CorrigirOrientacaoExif(bytesRotacionados);
+
+        using var resultado = SixLabors.ImageSharp.Image.Load(corrigidos);
+        // Após AutoOrient, uma imagem 100x50 com orientação 6 deve ter dimensões invertidas (50x100)
+        Assert.Equal(50, resultado.Width);
+        Assert.Equal(100, resultado.Height);
+    }
+
+    [Fact]
+    public void UploadFoto_ImagemSemExif_NaoAlteraBytes()
+    {
+        // Bytes inválidos (não JPEG) devem ser retornados sem modificação
+        var bytesInvalidos = new byte[] { 0x00, 0x01, 0x02, 0x03 };
+
+        var resultado = LeituraService.CorrigirOrientacaoExif(bytesInvalidos);
+
+        Assert.Equal(bytesInvalidos, resultado);
     }
 }
