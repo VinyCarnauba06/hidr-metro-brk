@@ -224,6 +224,9 @@ namespace HidrometroApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool?>("PrioridadeOperador")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("RecomendacaoRevisao")
                         .HasColumnType("boolean");
 
@@ -266,6 +269,9 @@ namespace HidrometroApp.Infrastructure.Migrations
                     b.HasIndex("UnidadeId");
 
                     b.HasIndex("ValidadoPorId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_leituras_status");
 
                     b.ToTable("leituras_hidrometro", (string)null);
                 });

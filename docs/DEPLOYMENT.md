@@ -40,9 +40,8 @@ ALLOWED_ORIGINS=https://hidrometro.suaempresa.com.br,https://app.suaempresa.com.
 # URL da API para o dashboard web (nome do serviço Docker = "api")
 API_URL=http://api:5000
 
-# Opcional — deixar vazio para OCR simulado
-AZURE_VISION_ENDPOINT=
-AZURE_VISION_KEY=
+# Opcional — deixar vazio para OCR simulado (Google Gemini Vision)
+GEMINI_API_KEY=
 ```
 
 ### 2. Subir os serviços
@@ -141,8 +140,7 @@ nssm start HidrometroWeb
 | `LOG_LEVEL` | Não | `Information` | Nível Serilog |
 | `ALLOWED_ORIGINS` | Não | `*` em dev | Origens CORS permitidas (vírgula) |
 | `API_URL` | Sim (web) | — | URL da API (usado pelo dashboard) |
-| `AZURE_VISION_ENDPOINT` | Não | — | Vazio = OCR simulado |
-| `AZURE_VISION_KEY` | Não | — | Vazio = OCR simulado |
+| `GEMINI_API_KEY` | Não | — | Vazio = OCR simulado (Google Gemini Vision) |
 
 ---
 
@@ -229,4 +227,4 @@ O banco tem schema antigo. Rodar: `docker exec hidrometro_api dotnet ef database
 Verificar que o volume `fotos_data` está montado no mesmo path de `STORAGE_PATH`. O endpoint `/api/operador/leituras/{id}/foto` deve retornar `200`.
 
 **OCR retorna `[MODO SIMULADO]`**
-Comportamento esperado quando `AZURE_VISION_ENDPOINT` está vazio. Para ativar OCR real, preencher `AZURE_VISION_ENDPOINT` e `AZURE_VISION_KEY` no `.env` e reiniciar o container.
+Comportamento esperado quando `GEMINI_API_KEY` está vazio. Para ativar OCR real, preencher `GEMINI_API_KEY` no `.env` e reiniciar o container.

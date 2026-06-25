@@ -4,6 +4,7 @@ using HidrometroApp.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using UnauthorizedAccessException = System.UnauthorizedAccessException;
 
 namespace HidrometroApp.Api.Controllers;
 
@@ -51,6 +52,28 @@ public class AuthController : ControllerBase
             usuario.Email,
             Perfil = usuario.Perfil.ToString()
         });
+    }
+
+    [HttpPost("google")]
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginRequest request)
+    {
+        try
+        {
+            var response = await _auth.LoginGoogleAsync(request.IdToken);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // id_token inválido ou expirado (erro do GoogleTokenValidator)
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (UnauthorizedException ex)
+        {
+            // Email válido mas não cadastrado no sistema
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPost("logout")]

@@ -14,6 +14,7 @@ public class LeituraResponse
     public string QualidadeFoto { get; set; } = string.Empty;
     public bool SuspeitaVazamento { get; set; }
     public bool PermiteRecurso { get; set; }
+    public bool? PrioridadeOperador { get; set; }
     public string? Motivo { get; set; }
     public DateTime CriadoEm { get; set; }
 }

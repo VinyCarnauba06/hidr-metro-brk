@@ -24,6 +24,7 @@ public class LeituraHidrometro
     public QualidadeFoto QualidadeFoto { get; set; } = QualidadeFoto.Ok;
     public bool SuspeitaVazamento { get; set; } = false;
     public bool RecomendacaoRevisao { get; set; } = false;
+    public bool? PrioridadeOperador { get; set; }
 
     // Observações
     public string? Observacao { get; set; }
@@ -44,7 +45,15 @@ public class LeituraHidrometro
 
 public enum OrigemLeitura { Ia, Manual }
 
-public enum StatusLeitura { Pendente, Validado, Rejeitado }
+public enum StatusLeitura
+{
+    Pendente,            // entrada manual ainda não validada pelo operador
+    Validado,            // aprovado pelo operador
+    Rejeitado,           // rejeitado manualmente pelo operador (mantido para compatibilidade)
+    Aceita,              // aceita automaticamente — confiança OCR ≥ 0.85
+    AguardandoRevisao,   // confiança OCR 0.50–0.84 — aguarda revisão do operador
+    Rejeitada,           // rejeitada automaticamente — confiança OCR < 0.50
+}
 
 public enum QualidadeFoto
 {

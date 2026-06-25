@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -114,9 +115,11 @@ public class WebAuthControllerTests
         };
     }
 
-    private static AuthController CriarController(Mock<IHttpClientFactory> httpFactory)
+    private static AuthController CriarController(Mock<IHttpClientFactory> httpFactory, string env = "Development")
     {
-        var controller = new AuthController(httpFactory.Object)
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        mockEnv.SetupGet(e => e.EnvironmentName).Returns(env);
+        var controller = new AuthController(httpFactory.Object, mockEnv.Object)
         {
             ControllerContext = CriarControllerContext()
         };
@@ -212,9 +215,9 @@ public class WebAuthControllerTests
     [Fact]
     public async Task Login_CredenciaisInvalidas_RetornaView_ComModelError()
     {
-        // Arrange — API retorna 401
+        // Arrange — API retorna 401, ambiente não-Development para forçar erro de modelo
         var httpFactory = MockHttpClientFactoryHelper.CriarFactory(HttpStatusCode.Unauthorized);
-        var controller = CriarController(httpFactory);
+        var controller = CriarController(httpFactory, env: "Production");
         var model = new LoginViewModel { Email = "invalido@teste.com", Senha = "SenhaErrada" };
 
         // Act
@@ -247,10 +250,10 @@ public class WebAuthControllerTests
         // Act
         var result = controller.Login();
 
-        // Assert
+        // Assert — Admin redireciona para Admin/Dashboard
         var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
+        Assert.Equal("Dashboard", redirect.ActionName);
+        Assert.Equal("Admin", redirect.ControllerName);
     }
 }
 

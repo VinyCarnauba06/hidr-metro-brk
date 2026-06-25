@@ -10,7 +10,7 @@ public class LeituraResultadoIa
     public string? Motivo { get; set; }
 }
 
-public interface IAzureVisionService
+public interface IGeminiVisionService
 {
     Task<LeituraResultadoIa> AnalisarFotoAsync(byte[] fotoBytes);
     bool ValidarQualidadeFoto(byte[] fotoBytes);

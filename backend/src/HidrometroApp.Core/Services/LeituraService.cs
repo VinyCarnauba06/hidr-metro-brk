@@ -4,7 +4,6 @@ using HidrometroApp.Core.Interfaces;
 using HidrometroApp.Core.Models;
 using HidrometroApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace HidrometroApp.Core.Services;
@@ -12,25 +11,25 @@ namespace HidrometroApp.Core.Services;
 public class LeituraService : ILeituraService
 {
     private readonly HidrometroDbContext _db;
-    private readonly IAzureVisionService _vision;
+    private readonly IGeminiVisionService _vision;
     private readonly IAuditoriaService _auditoria;
     private readonly AnomaliaService _anomalia;
-    private readonly IConfiguration _config;
+    private readonly IFotoStorage _fotoStorage;
     private readonly ILogger<LeituraService> _logger;
 
     public LeituraService(
         HidrometroDbContext db,
-        IAzureVisionService vision,
+        IGeminiVisionService vision,
         IAuditoriaService auditoria,
         AnomaliaService anomalia,
-        IConfiguration config,
+        IFotoStorage fotoStorage,
         ILogger<LeituraService> logger)
     {
         _db = db;
         _vision = vision;
         _auditoria = auditoria;
         _anomalia = anomalia;
-        _config = config;
+        _fotoStorage = fotoStorage;
         _logger = logger;
     }
 
@@ -46,7 +45,8 @@ public class LeituraService : ILeituraService
 
         // Verificar tentativas anteriores
         var tentativasAnteriores = await _db.LeiturasHidrometro
-            .Where(l => l.OsId == osId && l.UnidadeId == unidadeId && l.Status == StatusLeitura.Rejeitado)
+            .Where(l => l.OsId == osId && l.UnidadeId == unidadeId
+                && (l.Status == StatusLeitura.Rejeitado || l.Status == StatusLeitura.Rejeitada))
             .CountAsync();
 
         if (tentativasAnteriores >= 3)
@@ -55,7 +55,7 @@ public class LeituraService : ILeituraService
         // Salvar foto localmente
         var fotoPath = await SalvarFotoAsync(fotoBytes, nomeArquivo, os.CondominioId);
 
-        // Analisar com Azure Vision
+        // Analisar com Gemini Vision
         LeituraResultadoIa resultado;
         try
         {
@@ -63,8 +63,6 @@ public class LeituraService : ILeituraService
         }
         catch (HidrometroApp.Core.Exceptions.OcrSemLeituraValidaException ex)
         {
-            // OCR não encontrou padrão de visor — foto provavelmente focou o número de série.
-            // Registra como rejeitado e devolve PermiteRecurso=true para o fiscal fotografar novamente.
             _logger.LogWarning("OCR sem leitura válida para OS={OsId} Unidade={UnidadeId}: {Msg}",
                 osId, unidadeId, ex.Message);
             resultado = new LeituraResultadoIa
@@ -76,28 +74,53 @@ public class LeituraService : ILeituraService
             };
         }
 
-        var qualidade = resultado.Sucesso ? QualidadeFoto.Ok
-            : resultado.PermiteRecurso ? QualidadeFoto.BaixaConfianca
-            : tentativasAnteriores >= 2 ? QualidadeFoto.Rejeitado3x
-            : QualidadeFoto.BaixaConfianca;
+        // Confiança insuficiente → salva registro para auditoria e retorna 422
+        if (!resultado.Sucesso)
+        {
+            var leituraRej = new LeituraHidrometro
+            {
+                OsId          = osId,
+                UnidadeId     = unidadeId,
+                FotoPath      = fotoPath,
+                Origem        = OrigemLeitura.Ia,
+                ConfiancaIa   = resultado.Confianca,
+                Tentativas    = tentativasAnteriores + 1,
+                Status        = StatusLeitura.Rejeitada,
+                QualidadeFoto = QualidadeFoto.BaixaConfianca,
+                CriadoPorId   = fiscalId
+            };
+            _db.LeiturasHidrometro.Add(leituraRej);
+            if (os.Status == StatusOS.Aberta) os.Status = StatusOS.EmProgresso;
+            await _db.SaveChangesAsync();
+            await _auditoria.RegistrarAsync(fiscalId, "leituras_hidrometro", "INSERT", leituraRej.Id,
+                dadosDepois: new { leituraRej.ConfiancaIa, leituraRej.Origem, Status = "Rejeitado" },
+                origem: "app_fiscal");
+            throw new FotoRejeitadaException("Qualidade insuficiente. Refaça a foto.");
+        }
+
+        // Triagem por confiança: ≥0.85 aceita auto, 0.50–0.84 aguarda revisão
+        var status = resultado.Confianca >= 0.85m
+            ? StatusLeitura.Aceita
+            : StatusLeitura.AguardandoRevisao;
 
         var leitura = new LeituraHidrometro
         {
-            OsId = osId,
-            UnidadeId = unidadeId,
-            FotoPath = fotoPath,
-            ValorM3 = resultado.HidrometroM3,
-            ValorLitros = resultado.Litros ?? 0,
-            Origem = OrigemLeitura.Ia,
-            ConfiancaIa = resultado.Confianca,
-            Tentativas = tentativasAnteriores + 1,
-            Status = resultado.Sucesso ? StatusLeitura.Pendente : StatusLeitura.Rejeitado,
-            QualidadeFoto = qualidade,
-            CriadoPorId = fiscalId
+            OsId               = osId,
+            UnidadeId          = unidadeId,
+            FotoPath           = fotoPath,
+            ValorM3            = resultado.HidrometroM3,
+            ValorLitros        = resultado.Litros ?? 0,
+            Origem             = OrigemLeitura.Ia,
+            ConfiancaIa        = resultado.Confianca,
+            Tentativas         = tentativasAnteriores + 1,
+            Status             = status,
+            QualidadeFoto      = QualidadeFoto.Ok,
+            PrioridadeOperador = resultado.Confianca < 0.85m,
+            CriadoPorId        = fiscalId
         };
 
-        // Verificar suspeita de vazamento se leitura válida
-        if (resultado.Sucesso && resultado.HidrometroM3.HasValue)
+        // Verificar suspeita de vazamento
+        if (resultado.HidrometroM3.HasValue)
         {
             var ultimaLeitura = await ObterUltimaLeituraValidadaAsync(unidadeId);
             if (ultimaLeitura > 0)
@@ -110,11 +133,8 @@ public class LeituraService : ILeituraService
 
         _db.LeiturasHidrometro.Add(leitura);
 
-        // Atualizar status da OS
         if (os.Status == StatusOS.Aberta)
-        {
             os.Status = StatusOS.EmProgresso;
-        }
 
         await _db.SaveChangesAsync();
 
@@ -255,7 +275,9 @@ public class LeituraService : ILeituraService
 
         var unidades = os.Condominio.Unidades.ToList();
         var leiturasOk = await _db.LeiturasHidrometro
-            .Where(l => l.OsId == osId && l.Status != StatusLeitura.Rejeitado)
+            .Where(l => l.OsId == osId
+                && l.Status != StatusLeitura.Rejeitado
+                && l.Status != StatusLeitura.Rejeitada)
             .Select(l => l.UnidadeId)
             .Distinct()
             .ToListAsync();
@@ -302,26 +324,19 @@ public class LeituraService : ILeituraService
 
         if (leitura?.FotoPath == null) return null;
 
-        if (File.Exists(leitura.FotoPath))
-            return await File.ReadAllBytesAsync(leitura.FotoPath);
-
-        return null;
+        return await _fotoStorage.ObterAsync(leitura.FotoPath);
     }
 
     private async Task<string> SalvarFotoAsync(byte[] bytes, string nomeArquivo, int condominioId)
     {
-        var basePath = _config["STORAGE_PATH"] ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "storage", "fotos");
         var mesAno = DateTime.Now.ToString("yyyyMM");
-        var pasta = Path.Combine(basePath, mesAno, $"condo_{condominioId}");
-        Directory.CreateDirectory(pasta);
 
         var ext = Path.GetExtension(nomeArquivo).ToLower();
         if (ext != ".jpg" && ext != ".jpeg" && ext != ".png") ext = ".jpg";
 
-        var nomeSeguro = $"{Guid.NewGuid()}{ext}";
-        var caminho = Path.Combine(pasta, nomeSeguro);
-        await File.WriteAllBytesAsync(caminho, bytes);
-        return caminho;
+        var objectName = $"{mesAno}/condo_{condominioId}/{Guid.NewGuid()}{ext}";
+        var contentType = ext == ".png" ? "image/png" : "image/jpeg";
+        return await _fotoStorage.SalvarAsync(bytes, objectName, contentType);
     }
 
     private async Task<decimal> ObterUltimaLeituraValidadaAsync(int unidadeId)
@@ -379,19 +394,20 @@ public class LeituraService : ILeituraService
 
     private static LeituraResponse MapearResponse(LeituraHidrometro l, string numeroUnidade, bool permiteRecurso) => new()
     {
-        Id = l.Id,
-        UnidadeId = l.UnidadeId,
-        NumeroUnidade = numeroUnidade,
-        Sucesso = l.Status != StatusLeitura.Rejeitado,
-        ValorM3 = l.ValorM3Validado ?? l.ValorM3,
-        ValorLitros = l.ValorLitros,
-        ConfiancaIa = l.ConfiancaIa,
-        Origem = l.Origem.ToString(),
-        Status = l.Status.ToString(),
-        QualidadeFoto = l.QualidadeFoto.ToString(),
-        SuspeitaVazamento = l.SuspeitaVazamento,
-        PermiteRecurso = permiteRecurso,
-        Motivo = l.MotivoRejeicao,
-        CriadoEm = l.CriadoEm
+        Id                 = l.Id,
+        UnidadeId          = l.UnidadeId,
+        NumeroUnidade      = numeroUnidade,
+        Sucesso            = l.Status != StatusLeitura.Rejeitado && l.Status != StatusLeitura.Rejeitada,
+        ValorM3            = l.ValorM3Validado ?? l.ValorM3,
+        ValorLitros        = l.ValorLitros,
+        ConfiancaIa        = l.ConfiancaIa,
+        Origem             = l.Origem.ToString(),
+        Status             = l.Status.ToString(),
+        QualidadeFoto      = l.QualidadeFoto.ToString(),
+        SuspeitaVazamento  = l.SuspeitaVazamento,
+        PermiteRecurso     = permiteRecurso,
+        PrioridadeOperador = l.PrioridadeOperador,
+        Motivo             = l.MotivoRejeicao,
+        CriadoEm          = l.CriadoEm
     };
 }

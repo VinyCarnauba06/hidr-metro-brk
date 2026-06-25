@@ -5,6 +5,7 @@ using HidrometroApp.Core.Interfaces;
 using HidrometroApp.Core.Models;
 using HidrometroApp.Core.Services;
 using HidrometroApp.Infrastructure.Data;
+using HidrometroApp.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -21,14 +22,40 @@ public class LeituraServiceTests
             .Options);
 
     private LeituraService CriarServico(HidrometroDbContext db,
-        IAzureVisionService? vision = null,
-        IAuditoriaService? auditoria = null)
+        IGeminiVisionService? vision = null,
+        IAuditoriaService? auditoria = null,
+        IFotoStorage? storage = null)
     {
-        vision ??= new Mock<IAzureVisionService>().Object;
+        vision ??= new Mock<IGeminiVisionService>().Object;
         auditoria ??= new Mock<IAuditoriaService>().Object;
-        var config = new Mock<IConfiguration>();
-        return new LeituraService(db, vision, auditoria, new AnomaliaService(db), config.Object,
+        storage ??= CriarStorageTemp();
+        return new LeituraService(db, vision, auditoria, new AnomaliaService(db), storage,
             NullLogger<LeituraService>.Instance);
+    }
+
+    private static IFotoStorage CriarStorageTemp()
+    {
+        var cfg = new Mock<IConfiguration>();
+        cfg.Setup(c => c["STORAGE_PATH"]).Returns(Path.Combine(Path.GetTempPath(), "hidro_tests"));
+        return new LocalFotoStorage(cfg.Object, NullLogger<LocalFotoStorage>.Instance);
+    }
+
+    private static Mock<IGeminiVisionService> MockGemini(decimal confianca, bool sucesso = true,
+        decimal m3 = 1234m, int litros = 567)
+    {
+        var mock = new Mock<IGeminiVisionService>();
+        mock.Setup(v => v.ValidarQualidadeFoto(It.IsAny<byte[]>())).Returns(true);
+        mock.Setup(v => v.AnalisarFotoAsync(It.IsAny<byte[]>()))
+            .ReturnsAsync(new LeituraResultadoIa
+            {
+                Sucesso        = sucesso,
+                Confianca      = confianca,
+                HidrometroM3   = sucesso ? m3 : null,
+                Litros         = sucesso ? litros : null,
+                PermiteRecurso = confianca >= 0.40m,
+                Motivo         = sucesso ? null : "Baixa confiança simulada",
+            });
+        return mock;
     }
 
     private async Task<(HidrometroDbContext db, Condominio condo, Unidade unidade, OrdemServico os)> CriarBaseAsync()
@@ -173,5 +200,51 @@ public class LeituraServiceTests
 
         Assert.Equal(100m, progresso.PercentualConcluido);
         Assert.Equal(0, progresso.FaltandoRegistrar);
+    }
+
+    // ── Confidence threshold — 3 níveis ──────────────────────────────────────
+
+    [Fact]
+    public async Task UploadFoto_ConfiancaAlta_RetornaStatusAceita()
+    {
+        var (db, _, unidade, os) = await CriarBaseAsync();
+        var svc = CriarServico(db, MockGemini(confianca: 0.92m).Object);
+
+        var result = await svc.UploadFotoAsync(os.Id, unidade.Id, 1, Array.Empty<byte>(), "foto.jpg");
+
+        Assert.Equal("Aceita", result.Status);
+        Assert.True(result.Sucesso);
+        Assert.False(result.PrioridadeOperador ?? false);
+    }
+
+    [Fact]
+    public async Task UploadFoto_ConfiancaMedia_RetornaStatusAguardandoRevisao()
+    {
+        var (db, _, unidade, os) = await CriarBaseAsync();
+        var svc = CriarServico(db, MockGemini(confianca: 0.65m).Object);
+
+        var result = await svc.UploadFotoAsync(os.Id, unidade.Id, 1, Array.Empty<byte>(), "foto.jpg");
+
+        Assert.Equal("AguardandoRevisao", result.Status);
+        Assert.True(result.Sucesso);
+        Assert.True(result.PrioridadeOperador);
+    }
+
+    [Fact]
+    public async Task UploadFoto_ConfiancaBaixa_LancaFotoRejeitada_EGravaStatusRejeitada()
+    {
+        var (db, _, unidade, os) = await CriarBaseAsync();
+        var svc = CriarServico(db, MockGemini(confianca: 0.30m, sucesso: false).Object);
+
+        await Assert.ThrowsAsync<FotoRejeitadaException>(() =>
+            svc.UploadFotoAsync(os.Id, unidade.Id, 1, Array.Empty<byte>(), "foto.jpg"));
+
+        var leituraGravada = await db.LeiturasHidrometro
+            .Where(l => l.OsId == os.Id && l.UnidadeId == unidade.Id)
+            .FirstOrDefaultAsync();
+
+        Assert.NotNull(leituraGravada);
+        Assert.Equal(StatusLeitura.Rejeitada, leituraGravada.Status);
+        Assert.Equal(0.30m, leituraGravada.ConfiancaIa);
     }
 }

@@ -112,13 +112,11 @@ hidrometro-brk/
 
 ## OCR / Vision — DECISÃO ARQUITETURAL
 
-**OCR está mockado intencionalmente.** A classe `AzureVisionService` tem um método `SimularLeitura()` que é ativado automaticamente quando `AZURE_VISION_ENDPOINT` e `AZURE_VISION_KEY` não estão configuradas no ambiente. Isso permite desenvolvimento e testes completos sem dependência de serviço externo.
+**OCR usa Google Gemini Vision (`GeminiVisionService`) como implementação de produção.** A classe tem um método `SimularLeitura()` que é ativado automaticamente quando `GEMINI_API_KEY` não está configurada no ambiente. Isso permite desenvolvimento e testes completos sem dependência de serviço externo.
 
-**NÃO remover, NÃO substituir, NÃO migrar para Google Vision por enquanto.**
+`GeminiVisionService` é registrada no DI em `Program.cs` e implementa `IGeminiVisionService` (definida em `HidrometroApp.Core.Interfaces`).
 
-Quando a API key estiver disponível (OpenAI GPT-4o Vision é a direção provável), será feito um PR específico trocando apenas a implementação da interface `IAzureVisionService`.
-
-O `SimularLeitura()` retorna valores aleatórios realistas com `Confianca` entre 0.70 e 1.00 e a string `[MODO SIMULADO — sem Azure configurado]` no campo `Motivo`.
+O `SimularLeitura()` retorna valores aleatórios realistas com `Confianca` entre 0.70 e 1.00 e a string `[MODO SIMULADO — sem Gemini configurado]` no campo `Motivo`.
 
 ---
 
@@ -146,7 +144,7 @@ O `SimularLeitura()` retorna valores aleatórios realistas com `Confianca` entre
 - **Framework:** xUnit + Moq + FluentAssertions + EF InMemory
 - **Nomenclatura:** `Método_Condição_ResultadoEsperado` (ex: `ValidarLeitura_Negativa_Retorna_Invalida`)
 - **InMemory DB:** cada teste cria um `Guid.NewGuid().ToString()` como nome — nunca compartilhar DB entre testes
-- **Mocks:** usar `Moq` para interfaces externas (ITokenGenerator, IAzureVisionService)
+- **Mocks:** usar `Moq` para interfaces externas (ITokenGenerator, IGeminiVisionService)
 - **Cobertura mínima alvo:** 80% nos services de domínio (`LeituraService`, `AnomaliaService`, `AuthService`, `RelatorioService`)
 
 ---
@@ -171,9 +169,8 @@ LOG_LEVEL=Information
 LOG_PATH=./storage/logs/app.log
 ENVIRONMENT=Development
 
-# OCR — DEIXAR VAZIO para ativar modo simulado (padrão em dev)
-AZURE_VISION_ENDPOINT=
-AZURE_VISION_KEY=
+# Google Gemini Vision (OCR de hidrômetros) — DEIXAR VAZIO para ativar modo simulado (padrão em dev)
+GEMINI_API_KEY=
 
 # Storage de fotos — deixar vazio usa ./storage/fotos relativo ao executável
 STORAGE_PATH=
@@ -347,4 +344,4 @@ Mesma razão acima. Aceitável por ora.
 EF Core gerencia as migrations automaticamente em Development (`db.Database.MigrateAsync()`). O `schema.sql` existe como referência e para setup manual de produção se necessário. Não mantê-los sincronizados manualmente — migrations são a fonte de verdade.
 
 **Como testar o OCR real quando a key estiver disponível?**
-Setar `AZURE_VISION_ENDPOINT` e `AZURE_VISION_KEY` no `.env`. O `AzureVisionService` usa o client real automaticamente. O `SimularLeitura()` só ativa quando as duas vars estão vazias/nulas.
+Setar `GEMINI_API_KEY` no `.env`. O `GeminiVisionService` usa o client real automaticamente. O `SimularLeitura()` só ativa quando a variável está vazia/nula.

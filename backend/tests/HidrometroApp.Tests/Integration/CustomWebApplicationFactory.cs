@@ -29,8 +29,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             Environment.SetEnvironmentVariable("DATABASE_URL", "Host=localhost;Database=test_placeholder");
 
         Environment.SetEnvironmentVariable("JWT_SECRET", IntegrationTestHelper.JwtSecret);
-        Environment.SetEnvironmentVariable("AZURE_VISION_ENDPOINT", "");
-        Environment.SetEnvironmentVariable("AZURE_VISION_KEY", "");
 
         return base.CreateHost(builder);
     }

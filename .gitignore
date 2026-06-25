@@ -15,6 +15,7 @@ TestResults/
 
 # Logs
 *.log
+*.err
 logs/
 
 # Database
@@ -52,8 +53,9 @@ android/key.properties
 # Node
 node_modules/
 
-# Storage (fotos reais)
-storage/fotos/202*/
+# Storage (fotos reais) — em qualquer projeto (api, tests, raiz)
+**/storage/fotos/202*/
+**/storage/logs/*.log
 storage/backup_local/
 !storage/fotos/.gitkeep
 !storage/logs/.gitkeep

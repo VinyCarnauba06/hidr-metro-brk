@@ -2,9 +2,10 @@ using System.Text;
 using System.Threading.RateLimiting;
 using HidrometroApp.Core.Interfaces;
 using HidrometroApp.Core.Services;
-using HidrometroApp.Infrastructure.Azure;
 using HidrometroApp.Infrastructure.Services;
 using HidrometroApp.Infrastructure.Data;
+using HidrometroApp.Infrastructure.Security;
+using HidrometroApp.Infrastructure.Storage;
 using HidrometroApp.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -77,9 +78,17 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILeituraService, LeituraService>();
 builder.Services.AddScoped<IRelatorioService, RelatorioService>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
-builder.Services.AddScoped<IAzureVisionService, GeminiVisionService>();
+builder.Services.AddScoped<IGeminiVisionService, GeminiVisionService>();
 builder.Services.AddScoped<AnomaliaService>();
+
+// Storage de fotos: GCS quando GCS_BUCKET_NAME está setado; senão filesystem local
+var gcsBucket = builder.Configuration["GCS_BUCKET_NAME"];
+if (!string.IsNullOrWhiteSpace(gcsBucket))
+    builder.Services.AddSingleton<IFotoStorage, GcsFotoStorage>();
+else
+    builder.Services.AddSingleton<IFotoStorage, LocalFotoStorage>();
 builder.Services.AddScoped<ITokenGenerator, JwtTokenGeneratorAdapter>();
+builder.Services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
 
 // Controllers + JSON
 builder.Services.AddControllers()

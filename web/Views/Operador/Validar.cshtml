@@ -105,7 +105,8 @@
     {
         var lId          = leitura.GetProperty("id").GetInt32();
         var numeroUnidade = leitura.GetProperty("numeroUnidade").GetString() ?? "";
-        var valorM3      = leitura.GetProperty("valorM3").GetDecimal();
+        var valorM3El    = leitura.GetProperty("valorM3");
+        var valorM3      = valorM3El.ValueKind != JsonValueKind.Null ? valorM3El.GetDecimal() : (decimal?)null;
         var origem       = leitura.GetProperty("origem").GetString() ?? "";
         var status       = leitura.GetProperty("status").GetString() ?? "";
         var isVazamento  = leitura.GetProperty("suspeitaVazamento").GetBoolean();
@@ -161,7 +162,16 @@
 
                     <div>
                         <p class="text-xs text-slate-500 mb-0.5">Valor extraído pela IA</p>
-                        <p class="text-3xl font-syne font-bold text-hbrk">@valorM3 <span class="text-lg text-slate-400 font-dm font-normal">m³</span></p>
+                        <p class="text-3xl font-syne font-bold @(valorM3.HasValue ? "text-hbrk" : "text-slate-500")">
+                            @if (valorM3.HasValue)
+                            {
+                                @valorM3 <span class="text-lg text-slate-400 font-dm font-normal">m³</span>
+                            }
+                            else
+                            {
+                                <span class="text-sm font-normal">Sem leitura</span>
+                            }
+                        </p>
                         @if (temConfianca)
                         {
                             <p class="text-xs text-slate-600 mt-0.5">

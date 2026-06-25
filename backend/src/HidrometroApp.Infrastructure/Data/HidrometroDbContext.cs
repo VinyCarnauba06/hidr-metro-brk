@@ -82,6 +82,7 @@ public class HidrometroDbContext : DbContext
                 .HasForeignKey(x => x.CriadoPorId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(x => x.ValidadoPor).WithMany(x => x.LeiturasValidadas)
                 .HasForeignKey(x => x.ValidadoPorId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.Status).HasDatabaseName("ix_leituras_status");
         });
 
         modelBuilder.Entity<HistoricoConsumo>(e =>

@@ -36,6 +36,7 @@ services:
       STORAGE_PATH: /app/storage/fotos
       LOG_PATH: /app/storage/logs/app.log
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     volumes:
       - fotos_data:/app/storage/fotos
       - logs_data:/app/storage/logs

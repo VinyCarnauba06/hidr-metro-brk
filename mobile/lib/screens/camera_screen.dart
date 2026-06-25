@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import '../models/ordem_servico_model.dart';
 import '../services/api_service.dart';
+import '../services/photo_validator.dart';
 import 'resultado_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -47,6 +49,14 @@ class _CameraScreenState extends State<CameraScreen> {
 
     if (tamanho < 50 * 1024) {
       _mostrarErro('Foto muito pequena ou escura. Tente novamente com melhor iluminação.');
+      return;
+    }
+
+    // Blur check — rejeita localmente antes de fazer upload
+    final fotoBytes = await arquivo.readAsBytes();
+    final decoded = img.decodeImage(fotoBytes);
+    if (decoded != null && PhotoValidator.calcularNitidez(decoded) < 100) {
+      _mostrarErro('Foto borrada. Tente novamente com a câmera mais estável.');
       return;
     }
 
