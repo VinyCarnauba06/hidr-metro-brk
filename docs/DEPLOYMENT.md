@@ -184,6 +184,7 @@ nssm start HidrometroWeb
 | `GCS_BUCKET_NAME` | Não | — | Vazio = storage local; setado = ativa `GcsFotoStorage` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Sim (se GCS ativo) | — | Path do JSON do Service Account com `roles/storage.objectAdmin` |
 | `GOOGLE_CLIENT_ID` | Não | — | Client ID OAuth 2.0 para SSO Google Workspace |
+| `GOOGLE_ALLOWED_DOMAIN` | Recomendado em prod | — | Restringe login Google ao domínio do Workspace (ex: `prolarage.com.br`); vazio = sem restrição de domínio |
 
 ---
 

@@ -11,8 +11,11 @@
 - Sprint 5 (confidence threshold OCR, GCS storage, blur detection mobile, SSO Google backend)
   commitada em `9bd07f7`. Higiene de repo, EXIF auto-orient e overlay de enquadramento
   commitados em `3fb5edb`.
-- Testes: 49–52 conforme snapshot anterior. **Ainda precisa confirmar com `dotnet test`
-  na sua máquina** — este ambiente não tem .NET/Flutter instalado, só edita arquivos.
+- Testes: `dotnet build` limpo (0 erros) e `AuthServiceTests` (9/9) confirmados na sua
+  máquina em 11/07/2026. **Falta rodar a suíte completa** (inclui os novos testes de
+  integração de SSO) — este ambiente não tem .NET/Flutter instalado, só edita arquivos.
+- Vulnerabilidade `SixLabors.ImageSharp` 3.1.7 (NU1902, CVE-2025-54575, DoS no decoder
+  GIF) corrigida — bump para 3.1.11 em `HidrometroApp.Infrastructure.csproj`.
 - Working tree tem mudanças não commitadas de rotina (migrations, alguns arquivos mobile) —
   não relacionadas às pendências abaixo, revisar com `git status` antes de commitar.
 
@@ -40,9 +43,10 @@ Sprint 5 commitada, tombstones Azure removidos.
 
 | # | Item | Status |
 |---|------|--------|
-| 3.1 | `IGoogleTokenValidator` / `GoogleTokenValidator.cs` + rota em `AuthController` + `AuthService` | ✅ (código presente, não estava no PROGRESS anterior) |
-| 3.2 | Restringir login ao domínio Workspace da Prolar (ex: `@prolarage.com.br`) | ⛔ — não encontrado nenhum check de domínio em `AuthService.cs`, qualquer conta Google passa se `GOOGLE_CLIENT_ID` validar o audience |
-| 3.3 | Testes de integração cobrindo o fluxo SSO (sucesso, domínio errado, token inválido) | ⛔ não verificado |
+| 3.1 | `IGoogleTokenValidator` / `GoogleTokenValidator.cs` + rota em `AuthController` + `AuthService` | ✅ |
+| 3.2 | Restringir login ao domínio Workspace da Prolar via `GOOGLE_ALLOWED_DOMAIN` — `AuthService.LoginGoogleAsync` valida sufixo do email antes de checar o usuário; vazio = sem restrição (dev) | ✅ (11/07/2026) |
+| 3.3 | Testes unitários cobrindo domínio autorizado/negado, sem restrição, usuário não cadastrado, normalização de `@dominio` na config — `AuthServiceTests.cs` (6 novos testes) | ✅ (11/07/2026) |
+| 3.4 | Testes de **integração** do fluxo SSO via `WebApplicationFactory` (`POST /api/auth/google`) | ✅ (11/07/2026) — `AuthGoogleIntegrationTests.cs`, 5 testes com `FakeGoogleTokenValidator` (sem domínio, domínio negado, domínio autorizado, usuário não cadastrado, id_token vazio) |
 
 ### 4. Mobile 🟡
 
@@ -59,7 +63,7 @@ Sprint 5 commitada, tombstones Azure removidos.
 |---|------|--------|
 | 5.1 | GAP #9 — rotação automática de foto via EXIF antes do OCR | ✅ (commitado em `3fb5edb`) |
 | 5.2 | GAP #5 — sazonalidade na detecção de anomalia | ⛔ (Fase 4, fora de escopo por ora) |
-| 5.3 | `docs/GAPS_IMPLEMENTATION.md` — confirmar se ainda cita `AzureVisionService` | ⛔ não reverificado nesta sessão |
+| 5.3 | `docs/GAPS_IMPLEMENTATION.md` — confirmar se ainda cita `AzureVisionService` | ✅ (11/07/2026) — reverificado, doc já reflete `SixLabors.ImageSharp`/`CorrigirOrientacaoExif`, nenhuma menção a Azure |
 
 ### 6. Dívida arquitetural conhecida 🟡 — aceita por ora, Fase 2
 
@@ -82,11 +86,15 @@ Sprint 5 commitada, tombstones Azure removidos.
 
 ## Ordem de ataque sugerida
 
-1. Rodar `dotnet test` local para confirmar a suíte inteira (#2.7) — sem isso não dá pra confiar 100% no código.
-2. Fechar SSO: check de domínio Workspace (#3.2) + testes (#3.3).
-3. Rodar o deploy em produção com o script novo (#7.3–7.5).
-4. Calibrar blur detection com mais fotos reais (#4.3).
-5. Reverificar `GAPS_IMPLEMENTATION.md` (#5.3) e sazonalidade (#5.2, se entrar em escopo).
+**Foco atual: só localhost. Deploy em servidor real (#7) fica para depois.**
+
+1. Rodar a suíte **completa** de `dotnet test` (não só `AuthServiceTests`) para confirmar
+   0 falhas com tudo somado — SSO unitário + integração (11 testes novos) + o resto (#2.7).
+2. ~~SSO: domínio Workspace + testes~~ — feito (#3.2–#3.4).
+3. ~~Reverificar `GAPS_IMPLEMENTATION.md`~~ — feito (#5.3).
+4. Calibrar blur detection com mais fotos reais (#4.3) — depende de amostras de campo, não dá para fazer sem fotos reais.
+5. Sazonalidade na detecção de anomalia (#5.2) — fora de escopo por ora (Fase 4).
+6. Deploy em produção com o script novo (#7.3–7.5) — retomar quando sair do localhost.
 
 ---
 
