@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-// Armazenamento local para funcionar offline
+// Armazenamento local para funcionar offline.
+// No web, todas as operações são no-op (sync é exclusivo do app mobile).
 class StorageService {
   static Database? _db;
 
-  static Future<Database> get db async {
+  static Future<Database> get _database async {
     _db ??= await _init();
     return _db!;
   }
@@ -56,7 +58,8 @@ class StorageService {
     int valorLitros = 0,
     String origem = 'ia',
   }) async {
-    final database = await db;
+    if (kIsWeb) return 0;
+    final database = await _database;
     return database.insert('leituras_pendentes', {
       'os_id': osId,
       'unidade_id': unidadeId,
@@ -71,12 +74,14 @@ class StorageService {
   }
 
   static Future<List<Map<String, dynamic>>> listarPendentes() async {
-    final database = await db;
+    if (kIsWeb) return [];
+    final database = await _database;
     return database.query('leituras_pendentes', where: 'sincronizado = 0');
   }
 
   static Future<void> marcarSincronizado(int id) async {
-    final database = await db;
+    if (kIsWeb) return;
+    final database = await _database;
     await database.update(
       'leituras_pendentes',
       {
@@ -91,7 +96,8 @@ class StorageService {
 
   // Registra falha sem apagar o registro — permite nova tentativa futura.
   static Future<void> marcarErroSync(int id, String erro) async {
-    final database = await db;
+    if (kIsWeb) return;
+    final database = await _database;
     await database.rawUpdate(
       '''UPDATE leituras_pendentes
          SET retentativas = retentativas + 1,
@@ -105,7 +111,8 @@ class StorageService {
   static Future<List<Map<String, dynamic>>> listarPendentesParaSync({
     int maxRetentativas = 5,
   }) async {
-    final database = await db;
+    if (kIsWeb) return [];
+    final database = await _database;
     return database.query(
       'leituras_pendentes',
       where: 'sincronizado = 0 AND retentativas < ?',

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -46,16 +45,15 @@ class _CameraScreenState extends State<CameraScreen> {
     );
     if (foto == null) return;
 
-    final arquivo = File(foto.path);
-    final tamanho = await arquivo.length();
+    // Lê bytes via XFile — funciona tanto no mobile quanto no web (blob URL)
+    final fotoBytes = await foto.readAsBytes();
 
-    if (tamanho < 50 * 1024) {
+    if (fotoBytes.length < 50 * 1024) {
       _mostrarErro('Foto muito pequena ou escura. Tente novamente com melhor iluminação.');
       return;
     }
 
     // Blur check — rejeita localmente antes de fazer upload
-    final fotoBytes = await arquivo.readAsBytes();
     final decoded = img.decodeImage(fotoBytes);
     if (decoded != null && PhotoValidator.calcularNitidez(decoded) < 100) {
       setState(() => _fotoborrada = true);
@@ -69,7 +67,7 @@ class _CameraScreenState extends State<CameraScreen> {
       final unidadeId = widget.unidadeId ?? await _selecionarUnidade();
       if (unidadeId == null) return;
 
-      final resultado = await ApiService.uploadFoto(widget.os.id, unidadeId, arquivo);
+      final resultado = await ApiService.uploadFoto(widget.os.id, unidadeId, foto);
       if (!mounted) return;
 
       Navigator.of(context).push(

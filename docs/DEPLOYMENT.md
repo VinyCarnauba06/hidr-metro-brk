@@ -84,11 +84,40 @@ Todos os 21 assertions devem passar antes de considerar o deploy saudável.
 
 ### Pré-requisitos
 
-- .NET 8 Runtime (`winget install Microsoft.DotNet.AspNetCore.8`)
-- PostgreSQL 16 rodando localmente
+- .NET 8 SDK + Runtime (`winget install Microsoft.DotNet.SDK.8`)
+- PostgreSQL 16 — nativo **ou** via Docker (`docker compose up -d db`), não os dois na porta 5432 ao mesmo tempo
 - NSSM: `winget install NSSM.NSSM`
+- PowerShell rodando como Administrador
 
-### Publicar e registrar como serviço Windows
+### Script automatizado (recomendado)
+
+`scripts/deploy/install-services.ps1` cobre os passos manuais abaixo, é idempotente
+(pode rodar de novo para atualizar) e resolve o conflito de porta 5432 entre
+Postgres nativo e Docker.
+
+1. Crie um arquivo de env de produção **fora do repo** (nunca commitar), ex.
+   `C:\hidrometro\.env.prod`, com as chaves obrigatórias de `.env.example`
+   (`DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `API_URL`) e as
+   opcionais que quiser ativar (`GCS_BUCKET_NAME` + `GOOGLE_APPLICATION_CREDENTIALS`
+   para storage no GCS, `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID` para SSO).
+
+2. Rode como Administrador:
+
+   ```powershell
+   cd C:\Dev\hidrometro-brk\scripts\deploy
+   .\install-services.ps1 -EnvFile C:\hidrometro\.env.prod -PostgresMode docker
+   ```
+
+   Use `-PostgresMode native` se o Postgres 16 já roda nativo no servidor.
+   Use `-SkipPublish` em execuções seguintes para só reconfigurar os serviços
+   sem rodar `dotnet publish` de novo.
+
+3. O script publica API e Web em `C:\hidrometro\api` e `C:\hidrometro\web`,
+   registra `HidrometroAPI` (porta 5000) e `HidrometroWeb` (porta 5001) via NSSM
+   com logs rotacionados em `C:\hidrometro\logs`, e faz health check em
+   `GET /api/health` e na raiz do dashboard antes de terminar.
+
+### Passos manuais equivalentes (se preferir não usar o script)
 
 ```powershell
 # 1. Publicar API
@@ -109,7 +138,9 @@ nssm set HidrometroAPI AppEnvironmentExtra `
   "DATABASE_URL=postgresql://postgres:SENHA@localhost:5432/hidrometro_brk" `
   "JWT_SECRET=sua-secret-super-segura-32-chars" `
   "STORAGE_PATH=C:\hidrometro\storage\fotos" `
-  "LOG_PATH=C:\hidrometro\storage\logs\app.log" `
+  "GCS_BUCKET_NAME=" `
+  "GOOGLE_APPLICATION_CREDENTIALS=" `
+  "LOG_PATH=C:\hidrometro\logs\app.log" `
   "ALLOWED_ORIGINS=http://localhost:5001"
 
 # 4. Registrar Web como serviço
@@ -126,6 +157,15 @@ nssm start HidrometroAPI
 nssm start HidrometroWeb
 ```
 
+### Storage de fotos em produção (GCS vs local)
+
+- `GCS_BUCKET_NAME` vazio → `LocalFotoStorage`, grava em `STORAGE_PATH`. Simples,
+  mas não sobrevive a reinstalação do servidor nem escala horizontalmente.
+- `GCS_BUCKET_NAME` setado → `GcsFotoStorage` (`Google.Cloud.Storage.V1`), requer
+  `GOOGLE_APPLICATION_CREDENTIALS` apontando para o JSON do Service Account com
+  permissão `roles/storage.objectAdmin` no bucket. A troca é automática via DI em
+  `Program.cs` — nenhum outro código muda.
+
 ---
 
 ## Variáveis de ambiente — referência completa
@@ -141,6 +181,9 @@ nssm start HidrometroWeb
 | `ALLOWED_ORIGINS` | Não | `*` em dev | Origens CORS permitidas (vírgula) |
 | `API_URL` | Sim (web) | — | URL da API (usado pelo dashboard) |
 | `GEMINI_API_KEY` | Não | — | Vazio = OCR simulado (Google Gemini Vision) |
+| `GCS_BUCKET_NAME` | Não | — | Vazio = storage local; setado = ativa `GcsFotoStorage` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Sim (se GCS ativo) | — | Path do JSON do Service Account com `roles/storage.objectAdmin` |
+| `GOOGLE_CLIENT_ID` | Não | — | Client ID OAuth 2.0 para SSO Google Workspace |
 
 ---
 

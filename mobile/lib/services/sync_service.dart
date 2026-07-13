@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:io' show SocketException;
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import 'storage_service.dart';
@@ -109,11 +110,12 @@ class SyncService {
     final osId = item['os_id'] as int;
     final unidadeId = item['unidade_id'] as int;
 
-    if (fotoPath != null && fotoPath.isNotEmpty) {
-      final arquivo = File(fotoPath);
-      if (await arquivo.exists()) {
+    if (fotoPath != null && fotoPath.isNotEmpty && !kIsWeb) {
+      final xfile = XFile(fotoPath);
+      final bytes = await xfile.readAsBytes();
+      if (bytes.isNotEmpty) {
         // Envia foto para o endpoint de upload — a API faz OCR e persiste
-        await ApiService.uploadFoto(osId, unidadeId, arquivo);
+        await ApiService.uploadFoto(osId, unidadeId, xfile);
         return;
       }
     }

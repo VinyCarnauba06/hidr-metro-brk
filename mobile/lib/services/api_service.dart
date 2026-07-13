@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../config/app_config.dart';
 import '../models/leitura_model.dart';
 import '../models/ordem_servico_model.dart';
@@ -31,7 +31,8 @@ class ApiService {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
-  static Future<LeituraModel> uploadFoto(int osId, int unidadeId, File foto) async {
+  static Future<LeituraModel> uploadFoto(int osId, int unidadeId, XFile foto) async {
+    final bytes = await foto.readAsBytes();
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('${AppConfig.apiBaseUrl}/api/fiscal/leitura/upload'),
@@ -39,7 +40,7 @@ class ApiService {
       ..headers['Authorization'] = 'Bearer ${AuthService.token}'
       ..fields['osId'] = osId.toString()
       ..fields['unidadeId'] = unidadeId.toString()
-      ..files.add(await http.MultipartFile.fromPath('foto', foto.path));
+      ..files.add(http.MultipartFile.fromBytes('foto', bytes, filename: foto.name));
 
     final streamResp = await request.send().timeout(const Duration(seconds: 60));
     final resp = await http.Response.fromStream(streamResp);

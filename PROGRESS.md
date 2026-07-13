@@ -1,7 +1,6 @@
 # PROGRESS — Hidrômetro BRK
 
-> Tracker vivo de pendências. Fonte de verdade verificada **no código** em 23/06/2026
-> (não no memory.md importado, que estava desatualizado em vários pontos).
+> Tracker vivo de pendências. Fonte de verdade verificada **no código** em 11/07/2026.
 > Legenda: ✅ feito · 🟡 parcial · ⛔ pendente · 🔧 manual (você executa)
 
 ---
@@ -9,84 +8,86 @@
 ## Baseline atual
 
 - 4 semanas de roadmap concluídas (auth, leituras, anomalias P1+P2, relatórios, web, flutter).
-- Sprint 5 (confidence threshold OCR, cleanup Azure→GCS parcial, blur detection mobile) **implementado mas SEM COMMIT**.
-- Testes: memory aponta 52/52; CLAUDE.md aponta 49. **Precisa confirmar com `dotnet test` na sua máquina** (sandbox não tem .NET/Flutter, sem rede para instalar).
-- Build/test de .NET e Flutter rodam **na sua máquina** — aqui eu só escrevo o código.
+- Sprint 5 (confidence threshold OCR, GCS storage, blur detection mobile, SSO Google backend)
+  commitada em `9bd07f7`. Higiene de repo, EXIF auto-orient e overlay de enquadramento
+  commitados em `3fb5edb`.
+- Testes: 49–52 conforme snapshot anterior. **Ainda precisa confirmar com `dotnet test`
+  na sua máquina** — este ambiente não tem .NET/Flutter instalado, só edita arquivos.
+- Working tree tem mudanças não commitadas de rotina (migrations, alguns arquivos mobile) —
+  não relacionadas às pendências abaixo, revisar com `git status` antes de commitar.
 
 ---
 
 ## Pendências
 
-### 1. Higiene de repo ⛔ — *bloqueante leve, fazer primeiro*
+### 1. Higiene de repo ✅ — resolvido em `3fb5edb`
 
-| # | Item | Status |
-|---|------|--------|
-| 1.1 | Sprint 5 inteiro sem commit (~24 modificados + untracked: migrations, `GcsStorageService`, `photo_validator`) | ⛔ |
-| 1.2 | Logs e binários sujando o repo: `api*.log`, `web_run.log`, `*.err`, fotos `.jpg` em `backend/**/storage/fotos/` e `backend/tests/**/storage/fotos/` | ⛔ |
-| 1.3 | Adicionar esses padrões ao `.gitignore` e `git rm --cached` os já versionados | ⛔ |
+Sprint 5 commitada, tombstones Azure removidos.
 
-### 2. GCS Storage real 🟡 — *código pronto, aguardando `dotnet test` na máquina do Viny*
+### 2. GCS Storage real ✅
 
 | # | Item | Status |
 |---|------|--------|
 | 2.1 | `IFotoStorage` (Core/Interfaces) — `SalvarAsync`/`ObterAsync` | ✅ |
 | 2.2 | `LocalFotoStorage` (default, filesystem) + `GcsFotoStorage` (SDK `Google.Cloud.Storage.V1`, ativa com `GCS_BUCKET_NAME`) | ✅ |
-| 2.3 | `LeituraService` injeta `IFotoStorage` (removido `IConfiguration` morto); grava/lê via storage | ✅ |
-| 2.4 | DI em `Program.cs` escolhe Local/GCS por env var; pacote NuGet adicionado; stub antigo → tombstone; testes atualizados | ✅ |
-| 2.5 | **Confirmar `dotnet restore && dotnet build && dotnet test` (0 warnings, tudo verde)** | ⛔ você roda |
+| 2.3 | `LeituraService` injeta `IFotoStorage`; grava/lê via storage | ✅ |
+| 2.4 | DI em `Program.cs` escolhe Local/GCS por env var; pacote NuGet adicionado | ✅ |
+| 2.5 | `GcsStorageService.cs` (stub tombstone antigo) removido do repo | ✅ (11/07/2026) |
+| 2.6 | `GOOGLE_APPLICATION_CREDENTIALS` documentado explicitamente em `.env.example` | ✅ (11/07/2026) |
+| 2.7 | **Confirmar `dotnet restore && dotnet build && dotnet test` (0 warnings, tudo verde)** | ⛔ você roda |
 
-### 3. SSO Google Workspace ⛔
+### 3. SSO Google Workspace 🟡
 
 | # | Item | Status |
 |---|------|--------|
-| 3.1 | Hoje só JWT (`Program.cs:57`). Adicionar Google OAuth + callback | ⛔ |
-| 3.2 | Mapear `email` Google → `Usuario`; restringir ao domínio Workspace da Prolar; emitir JWT interno pós-login | ⛔ |
+| 3.1 | `IGoogleTokenValidator` / `GoogleTokenValidator.cs` + rota em `AuthController` + `AuthService` | ✅ (código presente, não estava no PROGRESS anterior) |
+| 3.2 | Restringir login ao domínio Workspace da Prolar (ex: `@prolarage.com.br`) | ⛔ — não encontrado nenhum check de domínio em `AuthService.cs`, qualquer conta Google passa se `GOOGLE_CLIENT_ID` validar o audience |
+| 3.3 | Testes de integração cobrindo o fluxo SSO (sucesso, domínio errado, token inválido) | ⛔ não verificado |
 
 ### 4. Mobile 🟡
 
 | # | Item | Status |
 |---|------|--------|
-| 4.1 | Blur detection (variância do Laplaciano, threshold 100) + rejeição imediata — `photo_validator.dart` + `camera_screen.dart:58` | ✅ |
-| 4.2 | Guia de enquadramento visual (overlay `CustomPainter`) na câmera | ⛔ |
-| 4.3 | Calibrar threshold de nitidez com fotos reais (amostra real: só 3/10 aceitáveis) | 🟡 |
-| 4.4 | Badge de pendentes offline, indicador de sync, recurso manual no resultado | ✅ (verificado em `ordens_screen.dart`) |
+| 4.1 | Blur detection (Laplaciano, threshold 100) — `photo_validator.dart` | ✅ |
+| 4.2 | Guia de enquadramento visual (overlay `CustomPainter`) | ✅ (commitado em `3fb5edb`) |
+| 4.3 | Calibrar threshold de nitidez com fotos reais (amostra: só 3/10 aceitáveis na última calibração) | 🟡 precisa mais amostras reais de campo |
+| 4.4 | Badge de pendentes offline, indicador de sync, recurso manual | ✅ |
 
-### 5. GAPs P3 / antigos ⛔
-
-| # | Item | Status |
-|---|------|--------|
-| 5.1 | GAP #9 — rotação automática de foto via EXIF antes do OCR (ImageSharp/SkiaSharp) | ⛔ |
-| 5.2 | GAP #5 — sazonalidade na detecção de anomalia | ⛔ (Fase 4) |
-| 5.3 | `docs/GAPS_IMPLEMENTATION.md` desatualizado (ainda cita `AzureVisionService` na rotação) | ⛔ |
-
-### 6. Dívida arquitetural conhecida 🟡 — *Fase 2, não bloqueia entrega*
+### 5. GAPs P3 / antigos 🟡
 
 | # | Item | Status |
 |---|------|--------|
-| 6.1 | Core→Infrastructure: `AnomaliaService`/`AuditoriaService` injetam `DbContext`; `RelatorioService` usa EPPlus/iText em Core (gambiarra `<Compile Include>` cross-project no csproj) | 🟡 aceito por ora |
-| 6.2 | Remover `AzureBlobService.cs` + pasta `Azure/` (tombstones) de vez após GCS no lugar | ⛔ |
+| 5.1 | GAP #9 — rotação automática de foto via EXIF antes do OCR | ✅ (commitado em `3fb5edb`) |
+| 5.2 | GAP #5 — sazonalidade na detecção de anomalia | ⛔ (Fase 4, fora de escopo por ora) |
+| 5.3 | `docs/GAPS_IMPLEMENTATION.md` — confirmar se ainda cita `AzureVisionService` | ⛔ não reverificado nesta sessão |
 
-### 7. Deploy produção Prolar 🔧 — *você executa (admin no servidor)*
+### 6. Dívida arquitetural conhecida 🟡 — aceita por ora, Fase 2
 
 | # | Item | Status |
 |---|------|--------|
-| 7.1 | Rodar `C:\Deploy\install-services.ps1` como admin (NSSM) | 🔧 |
-| 7.2 | Resolver conflito porta 5432 (Postgres nativo vs Docker) — escolher um | 🔧 |
-| 7.3 | Setar `GEMINI_API_KEY` real, `GCS_BUCKET_NAME`, `GOOGLE_APPLICATION_CREDENTIALS` no `.env` de prod | 🔧 |
-| 7.4 | Health check `GET /api/health` → 200 (já validado em dev) | ✅ |
+| 6.1 | Core→Infrastructure: `AnomaliaService`/`AuditoriaService` injetam `DbContext`; `RelatorioService` usa EPPlus/iText em Core | 🟡 aceito, não bloqueia entrega |
+| 6.2 | Tombstones Azure/GCS antigos removidos do repo | ✅ (11/07/2026) |
+
+### 7. Deploy produção Prolar 🟡 — script pronto, execução manual pendente
+
+| # | Item | Status |
+|---|------|--------|
+| 7.1 | Script `scripts/deploy/install-services.ps1` (versionado, idempotente, resolve conflito de porta 5432, lê env de um `-EnvFile` externo, health check embutido) | ✅ (11/07/2026, substitui o script solto em `C:\Deploy`) |
+| 7.2 | `docs/DEPLOYMENT.md` atualizado com o novo script + tabela de env vars completa (GCS, SSO) | ✅ (11/07/2026) |
+| 7.3 | Rodar `install-services.ps1 -EnvFile ... -PostgresMode docker\|native` como admin no servidor | 🔧 você executa |
+| 7.4 | Criar o `.env.prod` real fora do repo com `JWT_SECRET`, `DATABASE_URL`, `ALLOWED_ORIGINS`, e opcionalmente `GCS_BUCKET_NAME`+`GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID` | 🔧 você executa |
+| 7.5 | Health check `GET /api/health` → 200 em produção | 🔧 validado pelo script na primeira execução |
 
 ---
 
-## Ordem de ataque
+## Ordem de ataque sugerida
 
-1. Higiene de repo (rápido, protege o trabalho) → **#1**
-2. GCS Storage real → **#2**
-3. SSO Google Workspace → **#3**
-4. Guia de enquadramento mobile → **#4.2**
-5. GAPs P3 + docs → **#5**
-6. Remover tombstones Azure → **#6.2**
-7. Deploy prod → **#7** (manual, por último)
+1. Rodar `dotnet test` local para confirmar a suíte inteira (#2.7) — sem isso não dá pra confiar 100% no código.
+2. Fechar SSO: check de domínio Workspace (#3.2) + testes (#3.3).
+3. Rodar o deploy em produção com o script novo (#7.3–7.5).
+4. Calibrar blur detection com mais fotos reais (#4.3).
+5. Reverificar `GAPS_IMPLEMENTATION.md` (#5.3) e sazonalidade (#5.2, se entrar em escopo).
 
 ---
 
-*Última atualização: 23/06/2026*
+*Última atualização: 11/07/2026*

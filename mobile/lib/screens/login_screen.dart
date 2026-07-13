@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _loading = true; _erro = null; });
     try {
       await AuthService.login(
-        _cpfCtrl.text.replaceAll(RegExp(r'[.\-]'), ''),
+        _cpfCtrl.text.trim(),
         _senhaCtrl.text,
       );
       if (!mounted) return;
@@ -72,12 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _cpfCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'CPF',
-                      hintText: '000.000.000-00',
+                      labelText: 'Email',
+                      hintText: 'usuario@prolar.com',
                       prefixIcon: Icon(Icons.person),
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 16),
 

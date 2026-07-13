@@ -9,12 +9,12 @@ class AuthService {
   static UsuarioModel? get usuarioAtual => _usuario;
   static String? get token => _usuario?.token;
 
-  static Future<UsuarioModel> login(String cpf, String senha) async {
+  static Future<UsuarioModel> login(String email, String senha) async {
     final response = await http
         .post(
           Uri.parse('${AppConfig.apiBaseUrl}/api/auth/login'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'cpf': cpf, 'senha': senha}),
+          body: jsonEncode({'email': email, 'senha': senha}),
         )
         .timeout(const Duration(seconds: AppConfig.timeoutSeconds));
 
