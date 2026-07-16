@@ -151,11 +151,14 @@ O `SimularLeitura()` retorna valores aleatórios realistas com `Confianca` entre
 
 ## Credenciais de Desenvolvimento (seed)
 
-| Perfil | CPF | Senha |
+O login é por **email** (campo `Cpf` foi renomeado para `Email` na migration
+`20260606180000_CpfToEmail_OperadorCondominio`).
+
+| Perfil | Email | Senha |
 |---|---|---|
-| Admin | 00000000000 | Admin@123 |
-| Operador | 11111111111 | Operador@123 |
-| Fiscal | 22222222222 | Fiscal@123 |
+| Admin | admin@prolar.com | Admin@123 |
+| Operador | operador@prolar.com | Operador@123 |
+| Fiscal | fiscal@prolar.com | Fiscal@123 |
 
 ---
 
@@ -260,7 +263,7 @@ Criar `backend/tests/HidrometroApp.Tests/Integration/` com:
 - [ ] `AdminIntegrationTests`:
   - `POST /api/admin/condominios` → cria condomínio + unidades
   - `POST /api/admin/ordens` duplicada → 409
-  - `POST /api/admin/usuarios` com CPF duplicado → 409
+  - `POST /api/admin/usuarios` com email duplicado → 409
   - `GET /api/admin/auditoria` → retorna log de ações anteriores
 
 ### Semana 3 — Web Dashboard e Flutter

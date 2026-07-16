@@ -64,7 +64,7 @@ curl http://localhost:5000/api/health
 # Login de teste (deve retornar token)
 curl -s -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"00000000000","senha":"Admin@123"}' | jq .
+  -d '{"email":"admin@prolar.com","senha":"Admin@123"}' | jq .
 
 # Dashboard web
 curl -I http://localhost:5001
@@ -213,9 +213,9 @@ Execute antes de cada release. Marque cada item.
 
 ### Autenticação
 
-- [ ] Login como Admin com CPF `00000000000` / `Admin@123` → redireciona para `/Admin/Dashboard`
-- [ ] Login como Operador com CPF `11111111111` / `Operador@123` → redireciona para `/Operador`
-- [ ] Login como Fiscal com CPF `22222222222` / `Fiscal@123` → redireciona para `/Operador` (default)
+- [ ] Login como Admin com email `admin@prolar.com` / `Admin@123` → redireciona para `/Admin/Dashboard`
+- [ ] Login como Operador com email `operador@prolar.com` / `Operador@123` → redireciona para `/Operador`
+- [ ] Login como Fiscal com email `fiscal@prolar.com` / `Fiscal@123` → redireciona para `/Operador` (default)
 - [ ] Acesso direto a `/Admin` sem login → redirect para `/Auth/Login`
 - [ ] Login com senha errada → mensagem de erro visível na tela
 

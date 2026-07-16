@@ -13,7 +13,7 @@ void main() {
   tearDown(() => AuthService.client = originalClient);
 
   group('LoginScreen', () {
-    testWidgets('renderiza campos de CPF e senha corretamente', (tester) async {
+    testWidgets('renderiza campos de Email e senha corretamente', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginScreen()),
       );

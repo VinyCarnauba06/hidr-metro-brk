@@ -10,7 +10,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _cpfCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _senhaCtrl = TextEditingController();
   bool _loading = false;
   String? _erro;
@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _loading = true; _erro = null; });
     try {
       await AuthService.login(
-        _cpfCtrl.text.trim(),
+        _emailCtrl.text.trim(),
         _senhaCtrl.text,
       );
       if (!mounted) return;
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
 
                   TextField(
-                    controller: _cpfCtrl,
+                    controller: _emailCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       hintText: 'usuario@prolar.com',

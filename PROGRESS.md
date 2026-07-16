@@ -1,6 +1,6 @@
 # PROGRESS — Hidrômetro BRK
 
-> Tracker vivo de pendências. Fonte de verdade verificada **no código** em 16/07/2026.
+> Tracker vivo de pendências. Fonte de verdade verificada **no código** em 16/07/2026 (revisado novamente no mesmo dia).
 > Legenda: ✅ feito · 🟡 parcial · ⛔ pendente · 🔧 manual (você executa)
 
 ---
@@ -95,8 +95,9 @@ Sprint 5 commitada, tombstones Azure removidos.
 | 8.4 | `flutter test` — 5 falhas pré-existentes: overflow de layout em `resultado_screen.dart` (banner de vazamento sem scroll), testes de `LoginScreen` procurando campo `'CPF'` que virou `'Email'`, e 2 testes de loading incapazes de capturar o estado transitório (sem client HTTP injetável em `AuthService`) | ✅ `resultado_screen.dart` usa `Expanded(SingleChildScrollView(...))`; testes atualizados para `'Email'`; `AuthService.client` agora injetável, testes usam `MockClient`+`Completer` |
 | 8.5 | `mobile/android/app/build.gradle` referenciava `flutterVersionCode`/`flutterVersionName` nunca definidos (falta bloco de leitura de `local.properties`, típico de template antigo) | ✅ removido — plugin novo do Flutter injeta a partir de `pubspec.yaml` (`version: 1.0.0+1`) |
 | 8.6 | `minSdkVersion` do projeto abaixo do exigido pelo plugin `camera_android` (mín. 21) | ✅ elevado para 21 |
-| 8.7 | `AndroidManifest.xml` referencia `@mipmap/ic_launcher`, mas nenhuma pasta `mipmap-*` jamais existiu no repo | 🟡 resolvido com placeholder (ícone padrão do Flutter) só para destravar o CI — **precisa ser substituído pelo ícone real da marca (Hidrômetro BRK / Prolar AGE) antes de qualquer release** |
+| 8.7 | `AndroidManifest.xml` referencia `@mipmap/ic_launcher`, mas nenhuma pasta `mipmap-*` jamais existiu no repo | 🟡 resolvido com placeholder (ícone padrão do Flutter) só para destravar o CI. Busca completa no repo em 16/07/2026 (mobile/, web/, docs/, raiz) **não achou nenhum asset real da marca** (svg/png/pdf) — `mobile/assets/images/` só tem `.gitkeep`. **Precisa que alguém forneça o ícone real do Hidrômetro BRK / Prolar AGE antes de qualquer release** — não é algo que dá pra gerar por código. |
 | 8.8 | `local.properties` (específico de máquina) estava commitado | ✅ removido do controle de versão, coberto pelo `.gitignore` |
+| 8.9 | Resquícios de "CPF" como método de login em código e documentação — app migrou para login por email (`Cpf` → `Email` na migration `20260606180000_CpfToEmail_OperadorCondominio`), mas `_cpfCtrl` em `login_screen.dart`, nome de teste em `login_screen_test.dart`, e a tabela de credenciais + exemplo `curl` + checklist de QA em `CLAUDE.md`/`docs/DEPLOYMENT.md` ainda citavam CPFs que não existem no seed real (`admin@prolar.com` etc) | ✅ (16/07/2026) — renomeado `_cpfCtrl`→`_emailCtrl`, teste renomeado, docs atualizadas para os emails reais do seed |
 
 ---
 
@@ -108,10 +109,11 @@ Sprint 5 commitada, tombstones Azure removidos.
 2. ~~SSO: domínio Workspace + testes~~ — feito (#3.2–#3.4).
 3. ~~Reverificar `GAPS_IMPLEMENTATION.md`~~ — feito (#5.3).
 4. ~~CI "CI — Mobile Flutter"~~ — feito, verde de ponta a ponta (#8).
-5. Substituir o ícone placeholder do Android pelo ícone real da marca (#8.7).
-6. Calibrar blur detection com mais fotos reais (#4.3) — depende de amostras de campo, não dá para fazer sem fotos reais.
-7. Sazonalidade na detecção de anomalia (#5.2) — fora de escopo por ora (Fase 4).
-8. Deploy em produção com o script novo (#7.3–7.5) — retomar quando sair do localhost.
+5. ~~Resquícios de CPF como login em código/docs~~ — feito (#8.9).
+6. **Obter o ícone real da marca (Hidrômetro BRK / Prolar AGE) e substituir o placeholder** (#8.7) — bloqueado até alguém fornecer o asset, não dá pra gerar por código.
+7. Calibrar blur detection com mais fotos reais (#4.3) — depende de amostras de campo, não dá para fazer sem fotos reais.
+8. Sazonalidade na detecção de anomalia (#5.2) — fora de escopo por ora (Fase 4).
+9. Deploy em produção com o script novo (#7.3–7.5) — retomar quando sair do localhost.
 
 ---
 
