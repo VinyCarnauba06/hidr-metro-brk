@@ -42,8 +42,8 @@ class _FramingOverlayState extends State<FramingOverlay> with SingleTickerProvid
           animation: _opacity,
           builder: (context, _) {
             final borderColor = widget.isBlurry
-                ? Colors.orange.withValues(alpha: _opacity.value)
-                : Colors.white.withValues(alpha: 0.85);
+                ? Colors.orange.withOpacity(_opacity.value)
+                : Colors.white.withOpacity(0.85);
 
             return Stack(
               children: [
