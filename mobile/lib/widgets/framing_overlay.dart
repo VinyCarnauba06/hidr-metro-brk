@@ -42,8 +42,8 @@ class _FramingOverlayState extends State<FramingOverlay> with SingleTickerProvid
           animation: _opacity,
           builder: (context, _) {
             final borderColor = widget.isBlurry
-                ? Colors.orange.withOpacity(_opacity.value)
-                : Colors.white.withOpacity(0.85);
+                ? Colors.orange.withValues(alpha: _opacity.value)
+                : Colors.white.withValues(alpha: 0.85);
 
             return Stack(
               children: [
@@ -98,7 +98,6 @@ class _FramingOverlayState extends State<FramingOverlay> with SingleTickerProvid
   List<Widget> _corners(double left, double top, double w, double h, Color color) {
     const size = 20.0;
     const thickness = 3.0;
-    final r = BorderRadius.circular(3);
 
     Widget corner(double l, double t, bool flipX, bool flipY) {
       return Positioned(

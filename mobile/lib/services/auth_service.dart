@@ -6,11 +6,15 @@ import '../models/usuario_model.dart';
 class AuthService {
   static UsuarioModel? _usuario;
 
+  // Injetável em testes (ex: package:http/testing.dart MockClient) para
+  // controlar o timing e o conteúdo da resposta sem depender de rede real.
+  static http.Client client = http.Client();
+
   static UsuarioModel? get usuarioAtual => _usuario;
   static String? get token => _usuario?.token;
 
   static Future<UsuarioModel> login(String email, String senha) async {
-    final response = await http
+    final response = await client
         .post(
           Uri.parse('${AppConfig.apiBaseUrl}/api/auth/login'),
           headers: {'Content-Type': 'application/json'},
@@ -23,7 +27,7 @@ class AuthService {
       _usuario = UsuarioModel.fromJson(json);
       return _usuario!;
     } else if (response.statusCode == 401) {
-      throw Exception('CPF ou senha inválidos');
+      throw Exception('Email ou senha inválidos');
     } else {
       throw Exception('Erro ao conectar com o servidor');
     }

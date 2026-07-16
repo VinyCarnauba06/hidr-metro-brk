@@ -28,63 +28,69 @@ class ResultadoScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(
-              leitura.sucesso ? Icons.check_circle : Icons.warning_rounded,
-              size: 80,
-              color: leitura.sucesso ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              leitura.sucesso ? 'Leitura Registrada!' : 'Foto Ilegível',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: leitura.sucesso ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text('Unidade ${leitura.numeroUnidade}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 24),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Icon(
+                      leitura.sucesso ? Icons.check_circle : Icons.warning_rounded,
+                      size: 80,
+                      color: leitura.sucesso ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      leitura.sucesso ? 'Leitura Registrada!' : 'Foto Ilegível',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: leitura.sucesso ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Unidade ${leitura.numeroUnidade}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                    const SizedBox(height: 24),
 
-            if (leitura.sucesso) ...[
-              _InfoCard('Valor Lido', leitura.valorFormatado, Icons.speed),
-              const SizedBox(height: 8),
-              _InfoCard('Confiança da IA', '${leitura.confiancaPercent}%', Icons.psychology),
-              const SizedBox(height: 8),
-              _InfoCard('Origem', leitura.origem, Icons.info_outline),
-              if (leitura.suspeitaVazamento) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    border: Border.all(color: Colors.red.shade200),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.water_drop, color: Colors.red),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Suspeita de vazamento detectada. O operador será notificado.',
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                    if (leitura.sucesso) ...[
+                      _InfoCard('Valor Lido', leitura.valorFormatado, Icons.speed),
+                      const SizedBox(height: 8),
+                      _InfoCard('Confiança da IA', '${leitura.confiancaPercent}%', Icons.psychology),
+                      const SizedBox(height: 8),
+                      _InfoCard('Origem', leitura.origem, Icons.info_outline),
+                      if (leitura.suspeitaVazamento) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            border: Border.all(color: Colors.red.shade200),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.water_drop, color: Colors.red),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Suspeita de vazamento detectada. O operador será notificado.',
+                                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                      ],
+                    ] else ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                        child: Text(leitura.motivo ?? 'Não foi possível extrair a leitura',
+                            style: const TextStyle(color: Colors.orange), textAlign: TextAlign.center),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
-                child: Text(leitura.motivo ?? 'Não foi possível extrair a leitura',
-                    style: const TextStyle(color: Colors.orange), textAlign: TextAlign.center),
               ),
-            ],
-
-            const Spacer(),
+            ),
 
             if (!leitura.sucesso && leitura.permiteRecurso) ...[
               SizedBox(

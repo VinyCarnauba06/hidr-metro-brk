@@ -6,7 +6,7 @@ import 'package:hidrometro_brk/models/ordem_servico_model.dart';
 import 'package:hidrometro_brk/screens/camera_screen.dart';
 
 void main() {
-  final osTest = OrdemServicoModel(
+  const osTest = OrdemServicoModel(
     id: 1,
     mes: 6,
     ano: 2026,
@@ -19,7 +19,7 @@ void main() {
   group('CameraScreen', () {
     testWidgets('renderiza com nome do condomínio no AppBar', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CameraScreen(os: osTest)),
+        const MaterialApp(home: CameraScreen(os: osTest)),
       );
       // pump() sem settle — há um Future HTTP pendente que vai expirar
       // mas o widget já renderizou o estado inicial
@@ -30,7 +30,7 @@ void main() {
 
     testWidgets('mostra progress bar com valores iniciais do OS', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CameraScreen(os: osTest)),
+        const MaterialApp(home: CameraScreen(os: osTest)),
       );
       await tester.pump();
 
@@ -47,7 +47,7 @@ void main() {
 
     testWidgets('mostra botão de fotografar habilitado', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CameraScreen(os: osTest)),
+        const MaterialApp(home: CameraScreen(os: osTest)),
       );
       await tester.pump();
 
@@ -58,7 +58,7 @@ void main() {
 
     testWidgets('mostra instruções de uso para o fiscal', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CameraScreen(os: osTest)),
+        const MaterialApp(home: CameraScreen(os: osTest)),
       );
       await tester.pump();
 
@@ -68,7 +68,7 @@ void main() {
 
     testWidgets('LinearProgressIndicator tem valor 0.0 quando sem progresso', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CameraScreen(os: osTest)),
+        const MaterialApp(home: CameraScreen(os: osTest)),
       );
       await tester.pump();
 

@@ -7,7 +7,7 @@ import 'package:hidrometro_brk/models/ordem_servico_model.dart';
 import 'package:hidrometro_brk/screens/resultado_screen.dart';
 
 void main() {
-  final osTest = OrdemServicoModel(
+  const osTest = OrdemServicoModel(
     id: 1,
     mes: 6,
     ano: 2026,
@@ -18,7 +18,7 @@ void main() {
 
   group('ResultadoScreen', () {
     testWidgets('exibe alerta de vazamento quando suspeitaVazamento = true', (tester) async {
-      final leituraComVazamento = LeituraModel(
+      const leituraComVazamento = LeituraModel(
         id: 1,
         unidadeId: 1,
         numeroUnidade: '101',
@@ -52,7 +52,7 @@ void main() {
     });
 
     testWidgets('NÃO exibe alerta de vazamento quando suspeitaVazamento = false', (tester) async {
-      final leituraNormal = LeituraModel(
+      const leituraNormal = LeituraModel(
         id: 2,
         unidadeId: 2,
         numeroUnidade: '102',
@@ -85,7 +85,7 @@ void main() {
     });
 
     testWidgets('exibe valor lido e confiança corretamente', (tester) async {
-      final leitura = LeituraModel(
+      const leitura = LeituraModel(
         id: 3,
         unidadeId: 3,
         numeroUnidade: '103',
@@ -118,7 +118,7 @@ void main() {
     });
 
     testWidgets('mostra botão de recurso manual quando foto ilegível e permiteRecurso = true', (tester) async {
-      final leituraIlegivel = LeituraModel(
+      const leituraIlegivel = LeituraModel(
         id: 4,
         unidadeId: 4,
         numeroUnidade: '104',
@@ -149,7 +149,7 @@ void main() {
     });
 
     testWidgets('NÃO mostra botão de recurso manual quando permiteRecurso = false', (tester) async {
-      final leituraIlegivelSemRecurso = LeituraModel(
+      const leituraIlegivelSemRecurso = LeituraModel(
         id: 5,
         unidadeId: 5,
         numeroUnidade: '105',
@@ -177,7 +177,7 @@ void main() {
 
     testWidgets('botão Próxima Unidade chama callback onProxima', (tester) async {
       bool chamou = false;
-      final leitura = LeituraModel(
+      const leitura = LeituraModel(
         id: 6,
         unidadeId: 6,
         numeroUnidade: '106',
@@ -205,7 +205,7 @@ void main() {
     });
 
     testWidgets('abre dialog de recurso manual ao tocar no botão', (tester) async {
-      final leitura = LeituraModel(
+      const leitura = LeituraModel(
         id: 7,
         unidadeId: 7,
         numeroUnidade: '107',

@@ -74,7 +74,7 @@ class ApiService {
   static void _verificarResposta(http.Response resp) {
     // Exceção tipada para 401 — permite que SyncService detecte expiração de JWT
     // sem fazer parse de mensagem de string.
-    if (resp.statusCode == 401) throw TokenExpiradoException();
+    if (resp.statusCode == 401) throw const TokenExpiradoException();
     if (resp.statusCode >= 400) {
       final body = jsonDecode(resp.body) as Map<String, dynamic>?;
       throw Exception(body?['message'] ?? 'Erro ${resp.statusCode}');
