@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId "com.prolariage.hidrometro_brk"
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
     }
 
