@@ -57,8 +57,9 @@ Sprint 5 commitada, tombstones Azure removidos.
 |---|------|--------|
 | 4.1 | Blur detection (Laplaciano, threshold 100) — `photo_validator.dart` | ✅ |
 | 4.2 | Guia de enquadramento visual (overlay `CustomPainter`) | ✅ (commitado em `3fb5edb`) |
-| 4.3 | Calibrar threshold de nitidez com fotos reais (amostra: só 3/10 aceitáveis na última calibração) | 🟡 precisa mais amostras reais de campo |
+| 4.3 | Calibrar threshold de nitidez com fotos reais | 🟡 (19/07/2026) — calibrado com 34 fotos reais de um condomínio completo (`mobile/tool/calibrate_blur.dart`, roda a mesma lógica de `PhotoValidator.calcularNitidez`). **Achado 1:** threshold atual (100) não rejeita nenhuma das 32 fotos legíveis da amostra (score mínimo real: 131.84) — a queixa antiga de "só 3/10 aceitáveis" não se reproduziu aqui, não precisa abaixar o threshold. **Achado 2 (mais importante):** 2/34 fotos genuinamente ruins (borradas/veladas, mostrador ilegível) pontuaram **acima da mediana** (402: 574.32, 902: 457.72) — mais alto que várias fotos nítidas boas. Isso significa que **nenhum valor de threshold único resolve** — a variância do Laplaciano é calculada no frame inteiro e é dominada por textura de fundo (concreto, sujeira, brilho/reflexo), não pela região do mostrador. Ajustar só o número não corrige os falsos negativos. **Correção de verdade exigiria recortar a região do mostrador (o overlay de enquadramento já existe em `framing_overlay.dart`, dá pra usar como referência de crop) antes de calcular a variância** — escopo maior que recalibração, não fiz agora. Fotos de teste ficam em `mobile/test_photos/` (gitignored, dado de cliente real, não commitar). |
 | 4.4 | Badge de pendentes offline, indicador de sync, recurso manual | ✅ |
+| 4.5 | Confirmação humana quando o blur check suspeita de borrão — em vez de rejeitar a foto sem chance de revisão, `camera_screen.dart` mostra a foto em pop-up (`_confirmarFotoSuspeita`) e deixa o fiscal decidir se dá pra ler o mostrador; só refaz se ele confirmar que está ruim mesmo. Resolve na prática o gap do #4.3 (falso negativo do algoritmo) sem precisar da correção de recorte de ROI | ✅ (19/07/2026) |
 
 ### 5. GAPs P3 / antigos 🟡
 
@@ -95,7 +96,7 @@ Sprint 5 commitada, tombstones Azure removidos.
 | 8.4 | `flutter test` — 5 falhas pré-existentes: overflow de layout em `resultado_screen.dart` (banner de vazamento sem scroll), testes de `LoginScreen` procurando campo `'CPF'` que virou `'Email'`, e 2 testes de loading incapazes de capturar o estado transitório (sem client HTTP injetável em `AuthService`) | ✅ `resultado_screen.dart` usa `Expanded(SingleChildScrollView(...))`; testes atualizados para `'Email'`; `AuthService.client` agora injetável, testes usam `MockClient`+`Completer` |
 | 8.5 | `mobile/android/app/build.gradle` referenciava `flutterVersionCode`/`flutterVersionName` nunca definidos (falta bloco de leitura de `local.properties`, típico de template antigo) | ✅ removido — plugin novo do Flutter injeta a partir de `pubspec.yaml` (`version: 1.0.0+1`) |
 | 8.6 | `minSdkVersion` do projeto abaixo do exigido pelo plugin `camera_android` (mín. 21) | ✅ elevado para 21 |
-| 8.7 | `AndroidManifest.xml` referencia `@mipmap/ic_launcher`, mas nenhuma pasta `mipmap-*` jamais existiu no repo | 🟡 resolvido com placeholder (ícone padrão do Flutter) só para destravar o CI. Busca completa no repo em 16/07/2026 (mobile/, web/, docs/, raiz) **não achou nenhum asset real da marca** (svg/png/pdf) — `mobile/assets/images/` só tem `.gitkeep`. **Precisa que alguém forneça o ícone real do Hidrômetro BRK / Prolar AGE antes de qualquer release** — não é algo que dá pra gerar por código. |
+| 8.7 | `AndroidManifest.xml` referencia `@mipmap/ic_launcher`, mas nenhuma pasta `mipmap-*` jamais existiu no repo | ✅ (18/07/2026) — logo real da Prolar AGE fornecida (`mobile/assets/images/LogoAGE.png`, 1254×1254), redimensionada para as 5 densidades Android (`mipmap-mdpi` 48px até `mipmap-xxxhdpi` 192px) via resize bicúbico, substituindo o placeholder padrão do Flutter em `android/app/src/main/res/mipmap-*/ic_launcher.png`. iOS (`ios/Runner/Assets.xcassets`) e Windows (`.ico`) ainda **não têm** nenhum ícone configurado — fora do escopo desta rodada (app mobile em produção é Android). |
 | 8.8 | `local.properties` (específico de máquina) estava commitado | ✅ removido do controle de versão, coberto pelo `.gitignore` |
 | 8.9 | Resquícios de "CPF" como método de login em código e documentação — app migrou para login por email (`Cpf` → `Email` na migration `20260606180000_CpfToEmail_OperadorCondominio`), mas `_cpfCtrl` em `login_screen.dart`, nome de teste em `login_screen_test.dart`, e a tabela de credenciais + exemplo `curl` + checklist de QA em `CLAUDE.md`/`docs/DEPLOYMENT.md` ainda citavam CPFs que não existem no seed real (`admin@prolar.com` etc) | ✅ (16/07/2026) — renomeado `_cpfCtrl`→`_emailCtrl`, teste renomeado, docs atualizadas para os emails reais do seed |
 
@@ -110,11 +111,21 @@ Sprint 5 commitada, tombstones Azure removidos.
 3. ~~Reverificar `GAPS_IMPLEMENTATION.md`~~ — feito (#5.3).
 4. ~~CI "CI — Mobile Flutter"~~ — feito, verde de ponta a ponta (#8).
 5. ~~Resquícios de CPF como login em código/docs~~ — feito (#8.9).
-6. **Obter o ícone real da marca (Hidrômetro BRK / Prolar AGE) e substituir o placeholder** (#8.7) — bloqueado até alguém fornecer o asset, não dá pra gerar por código.
+6. ~~Obter o ícone real da marca (Prolar AGE) e substituir o placeholder~~ — feito (#8.7).
 7. Calibrar blur detection com mais fotos reais (#4.3) — depende de amostras de campo, não dá para fazer sem fotos reais.
 8. Sazonalidade na detecção de anomalia (#5.2) — fora de escopo por ora (Fase 4).
 9. Deploy em produção com o script novo (#7.3–7.5) — retomar quando sair do localhost.
 
 ---
 
-*Última atualização: 16/07/2026*
+### 9. Isolamento de testes de integração 🟡 — bug encontrado e corrigido em 18/07/2026
+
+| # | Item | Status |
+|---|------|--------|
+| 9.1 | `Program.cs` (`LoadDotEnv`) sobe diretórios até achar um `.env` — em máquina de dev com `GEMINI_API_KEY` real configurada na raiz do repo, os testes de integração acabavam chamando a API real do Gemini com bytes de foto falsos em vez do modo simulado, quebrando `UploadFoto_ComFotoValida_Retorna200EConfiancaMaiorQueZero` de forma determinística (não aparecia no CI, que não tem esse `.env`) | ✅ (18/07/2026) — `CustomWebApplicationFactory` agora força `GEMINI_API_KEY=""` via `ConfigureAppConfiguration` (sobrepõe a env var), garantindo modo simulado independente do `.env` local |
+| 9.2 | Feature de numeração customizada de unidades (números reais tipo `101, 102, 201...` em vez de sequencial `001, 002...`) ao criar condomínio — backend (`AdminController`), web (`Condominios.cshtml`) e mobile (`camera_screen.dart` resolve número digitado → Id da unidade) | ✅ implementada, 3 testes de integração novos, 67/67 passando |
+| 9.3 | Fix no `GeminiVisionService`: payload usava `inline_data`/`mime_type` (snake_case, formato errado — API do Gemini espera camelCase) e apontava pro modelo `gemini-1.5-flash` | ✅ corrigido para `inlineData`/`mimeType` e `gemini-2.5-flash` |
+
+---
+
+*Última atualização: 18/07/2026*

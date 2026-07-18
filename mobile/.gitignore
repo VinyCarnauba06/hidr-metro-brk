@@ -1,3 +1,7 @@
+# Fotos reais de campo (dados de cliente Prolar AGE) — só para calibração local,
+# nunca commitar.
+test_photos/
+
 # Miscellaneous
 *.class
 *.log

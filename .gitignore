@@ -13,6 +13,9 @@ TestResults/
 .env.local
 .env.*.local
 
+# Docker Compose local override (ex: remapear portas por conflito local)
+docker-compose.override.yml
+
 # Logs
 *.log
 *.err

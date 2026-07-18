@@ -4,6 +4,12 @@ import 'package:image/image.dart' as img;
 class PhotoValidator {
   // Returns Laplacian variance as a sharpness metric.
   // Threshold: variance < 100 → image is blurry.
+  //
+  // Calibrado em 19/07/2026 com 34 fotos reais de campo (mobile/tool/calibrate_blur.dart):
+  // 100 não rejeita nenhuma foto legível da amostra (mínimo real: 131.84), mas a variância
+  // é calculada no frame inteiro — fundo com textura (concreto, sujeira, brilho) pode inflar
+  // o score de uma foto genuinamente borrada acima do de fotos boas. Threshold sozinho não
+  // resolve esse caso; precisaria recortar a região do mostrador antes de calcular.
   static double calcularNitidez(img.Image imagem) {
     // Downsample first for performance (~256px wide)
     final amostra = img.copyResize(imagem, width: 256);
