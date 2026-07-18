@@ -1,6 +1,7 @@
 using HidrometroApp.Core.Models;
 using HidrometroApp.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,18 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        // Programa.cs's LoadDotEnv() sobe diretórios até achar um .env — em máquina de dev
+        // isso pega o .env real da raiz do repo (com GEMINI_API_KEY de verdade) e faz os
+        // testes chamarem a API do Gemini de verdade com bytes de foto falsos, quebrando o
+        // modo simulado que os testes de integração esperam. Sobrepõe no IConfiguration
+        // (fonte adicionada por último vence) pra garantir isolamento independente do
+        // que a env var já carregou.
+        builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["GEMINI_API_KEY"] = ""
+            }));
 
         builder.ConfigureTestServices(services =>
         {
