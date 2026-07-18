@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace HidrometroApp.Tests.Integration;
@@ -38,6 +39,63 @@ public class AdminIntegrationTests : IClassFixture<CustomWebApplicationFactory>,
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("Novo Condo Teste", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CriarCondominio_ComNumerosCustomizados_CriaUnidadesComNumerosReais()
+    {
+        var response = await _client.PostAsJsonAsync("/api/admin/condominios", new
+        {
+            nome = "Condo Numeracao Real",
+            endereco = "Rua Y, 456",
+            qtdUnidades = 4,
+            tipoMedidor = "AguaFria",
+            numeros = new[] { "101", "102", "201", "202" }
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var condoId = body.GetProperty("id").GetInt32();
+
+        var listResponse = await _client.GetAsync("/api/admin/condominios");
+        var lista = await listResponse.Content.ReadAsStringAsync();
+        Assert.Contains("Condo Numeracao Real", lista, StringComparison.OrdinalIgnoreCase);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HidrometroApp.Infrastructure.Data.HidrometroDbContext>();
+        var numeros = db.Unidades.Where(u => u.CondominioId == condoId).Select(u => u.Numero).OrderBy(n => n).ToList();
+        Assert.Equal(new[] { "101", "102", "201", "202" }, numeros);
+    }
+
+    [Fact]
+    public async Task CriarCondominio_NumerosNaoBateComQtdUnidades_Retorna422()
+    {
+        var response = await _client.PostAsJsonAsync("/api/admin/condominios", new
+        {
+            nome = "Condo Inconsistente",
+            endereco = "Rua Z, 789",
+            qtdUnidades = 3,
+            tipoMedidor = "AguaFria",
+            numeros = new[] { "101", "102" }
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CriarCondominio_NumerosDuplicados_Retorna422()
+    {
+        var response = await _client.PostAsJsonAsync("/api/admin/condominios", new
+        {
+            nome = "Condo Duplicado",
+            endereco = "Rua W, 000",
+            qtdUnidades = 3,
+            tipoMedidor = "AguaFria",
+            numeros = new[] { "101", "101", "102" }
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
 
     [Fact]

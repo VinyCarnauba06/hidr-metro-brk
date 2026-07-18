@@ -104,6 +104,23 @@ public class AdminController : ControllerBase
     [HttpPost("condominios")]
     public async Task<IActionResult> CriarCondominio([FromBody] CriarCondominioRequest request)
     {
+        // Numeros customizados (ex: 101, 102, 201, 202 — numeração real por andar) têm
+        // prioridade sobre a geração sequencial "001".."0NN". Se informado, precisa bater
+        // com QtdUnidades e não pode ter duplicata — evita inconsistência silenciosa.
+        if (request.Numeros != null && request.Numeros.Count > 0)
+        {
+            if (request.Numeros.Count != request.QtdUnidades)
+                return UnprocessableEntity(new { message = $"Numeros ({request.Numeros.Count} itens) não bate com QtdUnidades ({request.QtdUnidades})" });
+
+            var duplicados = request.Numeros
+                .GroupBy(n => n.Trim())
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+            if (duplicados.Count > 0)
+                return UnprocessableEntity(new { message = $"Numeros duplicados: {string.Join(", ", duplicados)}" });
+        }
+
         var condo = new Condominio
         {
             Nome = request.Nome,
@@ -114,12 +131,16 @@ public class AdminController : ControllerBase
         _db.Condominios.Add(condo);
         await _db.SaveChangesAsync();
 
-        for (int i = 1; i <= request.QtdUnidades; i++)
+        var numeros = request.Numeros != null && request.Numeros.Count > 0
+            ? request.Numeros.Select(n => n.Trim()).ToList()
+            : Enumerable.Range(1, request.QtdUnidades).Select(i => i.ToString().PadLeft(3, '0')).ToList();
+
+        foreach (var numero in numeros)
         {
             _db.Unidades.Add(new Unidade
             {
                 CondominioId = condo.Id,
-                Numero = i.ToString().PadLeft(3, '0'),
+                Numero = numero,
                 Ativa = true
             });
         }
@@ -220,7 +241,7 @@ public class AdminController : ControllerBase
     }
 }
 
-public record CriarCondominioRequest(string Nome, string? Endereco, int QtdUnidades, string TipoMedidor);
+public record CriarCondominioRequest(string Nome, string? Endereco, int QtdUnidades, string TipoMedidor, List<string>? Numeros = null);
 public record CriarOrdemRequest(int CondominioId, int Mes, int Ano);
 public record CriarUsuarioRequest(string Nome, string Email, string Senha, string Perfil);
 public record AtribuirCondominiosRequest(List<int> CondominioIds);

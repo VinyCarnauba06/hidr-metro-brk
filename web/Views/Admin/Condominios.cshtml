@@ -64,6 +64,7 @@
             <input name="qtdUnidades" required type="number" min="1" placeholder="ex: 40"
                 class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+            <p class="text-xs text-slate-600 mt-1">Ignorado se "Números das unidades" estiver preenchido — o total vem da lista.</p>
         </div>
         <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tipo de Medidor *</label>
@@ -75,6 +76,18 @@
                 <option value="AguaQuente">Água Quente</option>
                 <option value="Gas">Gás</option>
             </select>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                Números das unidades (opcional — separa por vírgula, espaço ou linha)
+            </label>
+            <textarea name="numerosTexto" rows="3" placeholder="ex: 101, 102, 103, 104, 201, 202, 203, 204"
+                class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors"></textarea>
+            <p class="text-xs text-slate-600 mt-1">
+                Deixe em branco pra gerar sequencial 001, 002... até o Total de Unidades.
+                Preencha pra usar a numeração real do prédio (ex: por andar).
+            </p>
         </div>
     </div>
     <div class="flex gap-2 mt-5">

@@ -70,14 +70,26 @@ public class AdminController : Controller
 
     [HttpPost]
     public async Task<IActionResult> CriarCondominio(
-        string nome, string? endereco, int qtdUnidades, string tipoMedidor)
+        string nome, string? endereco, int qtdUnidades, string tipoMedidor, string? numerosTexto)
     {
         try
         {
+            var numeros = string.IsNullOrWhiteSpace(numerosTexto)
+                ? null
+                : numerosTexto
+                    .Split(new[] { ',', ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(n => n.Trim())
+                    .Where(n => n.Length > 0)
+                    .ToList();
+
             var client = CriarClient();
             var resp = await client.PostAsJsonAsync("/api/admin/condominios", new
             {
-                nome, endereco, qtdUnidades, tipoMedidor
+                nome,
+                endereco,
+                qtdUnidades = numeros?.Count ?? qtdUnidades,
+                tipoMedidor,
+                numeros
             });
 
             if (resp.IsSuccessStatusCode)
