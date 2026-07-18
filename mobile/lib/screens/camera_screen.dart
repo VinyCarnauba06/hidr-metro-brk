@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -23,17 +24,26 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _enviando = false;
   bool _fotoborrada = false;
   Map<String, dynamic>? _progresso;
+  List<dynamic>? _unidades;
 
   @override
   void initState() {
     super.initState();
     _carregarProgresso();
+    _carregarUnidades();
   }
 
   Future<void> _carregarProgresso() async {
     try {
       final p = await ApiService.obterProgresso(widget.os.id);
       setState(() => _progresso = p);
+    } catch (_) {}
+  }
+
+  Future<void> _carregarUnidades() async {
+    try {
+      final detalhes = await ApiService.obterDetalhesOs(widget.os.id);
+      setState(() => _unidades = detalhes['unidades'] as List<dynamic>);
     } catch (_) {}
   }
 
@@ -53,12 +63,18 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
 
-    // Blur check — rejeita localmente antes de fazer upload
+    // Blur check — a variância do Laplaciano no frame inteiro erra às vezes
+    // (fundo com textura pode inflar o score de foto ruim, ver photo_validator.dart).
+    // Em vez de rejeitar direto, mostra a foto pro fiscal decidir: o olho humano
+    // resolve os casos que o algoritmo não consegue.
     final decoded = img.decodeImage(fotoBytes);
     if (decoded != null && PhotoValidator.calcularNitidez(decoded) < 100) {
       setState(() => _fotoborrada = true);
-      _mostrarErro('Foto borrada. Tente novamente com a câmera mais estável.');
-      return;
+      final confirmaLegivel = await _confirmarFotoSuspeita(fotoBytes);
+      if (confirmaLegivel != true) {
+        _mostrarErro('Foto borrada. Tente novamente com a câmera mais estável.');
+        return;
+      }
     }
     setState(() => _fotoborrada = false);
 
@@ -89,6 +105,17 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
+  // Resolve o número digitado pelo fiscal (ex: "101") para o Id interno da
+  // unidade no banco — os dois são valores diferentes, não intercambiáveis.
+  int? _resolverUnidadePorNumero(String numeroDigitado) {
+    final numero = numeroDigitado.trim();
+    if (numero.isEmpty || _unidades == null) return null;
+    for (final u in _unidades!) {
+      if (u['numero'].toString() == numero) return u['id'] as int;
+    }
+    return null;
+  }
+
   Future<int?> _selecionarUnidade() async {
     // Quando unidade já está definida (fluxo normal)
     if (widget.unidadeId != null) return widget.unidadeId;
@@ -108,8 +135,53 @@ class _CameraScreenState extends State<CameraScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, int.tryParse(ctrl.text)),
+            onPressed: () {
+              final id = _resolverUnidadePorNumero(ctrl.text);
+              if (id == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Unidade "${ctrl.text}" não encontrada nesta OS.')),
+                );
+                return;
+              }
+              Navigator.pop(context, id);
+            },
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mostra a foto em tamanho grande e deixa o fiscal decidir: se dá pra ler o
+  // mostrador mesmo com o alerta de borrão, envia mesmo assim; senão, refaz.
+  Future<bool?> _confirmarFotoSuspeita(Uint8List fotoBytes) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Foto pode estar borrada'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Dá pra ler o número do mostrador nesta foto?'),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 350),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(fotoBytes, fit: BoxFit.contain),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tirar de novo'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Dá pra ler, enviar'),
           ),
         ],
       ),

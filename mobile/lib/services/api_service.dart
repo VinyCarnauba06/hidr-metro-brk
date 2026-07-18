@@ -31,6 +31,15 @@ class ApiService {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
+  static Future<Map<String, dynamic>> obterDetalhesOs(int osId) async {
+    final resp = await http
+        .get(Uri.parse('${AppConfig.apiBaseUrl}/api/fiscal/os/$osId'), headers: _headers)
+        .timeout(const Duration(seconds: AppConfig.timeoutSeconds));
+
+    _verificarResposta(resp);
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
   static Future<LeituraModel> uploadFoto(int osId, int unidadeId, XFile foto) async {
     final bytes = await foto.readAsBytes();
     final request = http.MultipartRequest(
