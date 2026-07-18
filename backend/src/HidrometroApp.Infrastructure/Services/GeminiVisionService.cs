@@ -118,14 +118,14 @@ public class GeminiVisionService : IGeminiVisionService
                         parts = new object[]
                         {
                             new { text = PROMPT },
-                            new { inline_data = new { mime_type = mimeType, data = base64 } }
+                            new { inlineData = new { mimeType = mimeType, data = base64 } }
                         }
                     }
                 },
                 generationConfig = new { temperature = 0.1, maxOutputTokens = 200 }
             };
 
-            var url     = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+            var url     = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
             var response = await _http.PostAsync(url, content);
