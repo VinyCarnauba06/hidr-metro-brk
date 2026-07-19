@@ -31,17 +31,73 @@
         <h1 class="font-syne font-bold text-2xl text-slate-100">Condomínios</h1>
         <p class="text-slate-500 text-sm mt-1">@lista.Count() cadastrados</p>
     </div>
-    <button id="btn-novo-condo"
-        onclick="document.getElementById('form-novo-condo').classList.remove('hidden'); this.classList.add('hidden');"
-        class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border
-               bg-hbrk/10 text-hbrk border-hbrk/30 hover:bg-hbrk hover:border-hbrk transition-colors cursor-pointer"
-        onmouseover="this.style.color='#0d0f14'" onmouseout="this.style.color=''">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Novo Condomínio
-    </button>
+    <div class="flex gap-2">
+        <button id="btn-nova-os"
+            onclick="document.getElementById('form-nova-os').classList.remove('hidden'); this.classList.add('hidden');"
+            class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border
+                   bg-hcard text-slate-300 border-hrim hover:border-slate-600 transition-colors cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Nova Ordem de Serviço
+        </button>
+        <button id="btn-novo-condo"
+            onclick="document.getElementById('form-novo-condo').classList.remove('hidden'); this.classList.add('hidden');"
+            class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border
+                   bg-hbrk/10 text-hbrk border-hbrk/30 hover:bg-hbrk hover:border-hbrk transition-colors cursor-pointer"
+            onmouseover="this.style.color='#0d0f14'" onmouseout="this.style.color=''">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Novo Condomínio
+        </button>
+    </div>
 </div>
+
+<form id="form-nova-os" method="post" action="/Admin/CriarOrdem"
+      class="hidden bg-hsurf border border-hrim rounded-2xl p-5 mb-6">
+    <h3 class="font-syne font-semibold text-slate-100 mb-4">Nova Ordem de Serviço</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="md:col-span-1">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Condomínio *</label>
+            <select name="condominioId" required
+                class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors appearance-none cursor-pointer">
+                <option value="">Selecione...</option>
+                @foreach (var c in lista)
+                {
+                    var id   = c.GetProperty("id").GetInt32();
+                    var nome = c.GetProperty("nome").GetString() ?? "";
+                    <option value="@id">@nome</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Mês *</label>
+            <input name="mes" required type="number" min="1" max="12" value="@DateTime.Now.Month"
+                class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Ano *</label>
+            <input name="ano" required type="number" min="2020" value="@DateTime.Now.Year"
+                class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+        </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+        <button type="submit"
+            class="px-4 py-2 rounded-lg text-sm font-semibold bg-hbrk hover:opacity-90 transition-opacity cursor-pointer"
+            style="color:#0d0f14;">
+            Criar Ordem de Serviço
+        </button>
+        <button type="button"
+            onclick="document.getElementById('form-nova-os').classList.add('hidden'); document.getElementById('btn-nova-os').classList.remove('hidden');"
+            class="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 border border-hrim hover:border-slate-600 transition-colors cursor-pointer">
+            Cancelar
+        </button>
+    </div>
+</form>
 
 <form id="form-novo-condo" method="post" action="/Admin/CriarCondominio"
       class="hidden bg-hsurf border border-hrim rounded-2xl p-5 mb-6">

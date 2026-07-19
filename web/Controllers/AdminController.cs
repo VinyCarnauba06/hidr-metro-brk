@@ -117,6 +117,43 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Condominios));
     }
 
+    [HttpPost]
+    public async Task<IActionResult> CriarOrdem(int condominioId, int mes, int ano)
+    {
+        try
+        {
+            var client = CriarClient();
+            var resp = await client.PostAsJsonAsync("/api/admin/ordens", new { condominioId, mes, ano });
+
+            if (resp.IsSuccessStatusCode)
+            {
+                TempData["Sucesso"] = $"Ordem de serviço {mes:D2}/{ano} criada com sucesso.";
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                TempData["Erro"] = "Já existe uma OS para este condomínio nesta competência.";
+            }
+            else
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                try
+                {
+                    var doc = JsonDocument.Parse(body);
+                    TempData["Erro"] = doc.RootElement.TryGetProperty("message", out var m)
+                        ? m.GetString()
+                        : $"Erro {(int)resp.StatusCode}";
+                }
+                catch { TempData["Erro"] = $"Erro ao criar OS ({(int)resp.StatusCode})."; }
+            }
+        }
+        catch
+        {
+            TempData["Erro"] = "Não foi possível conectar à API.";
+        }
+
+        return RedirectToAction(nameof(Condominios));
+    }
+
     public async Task<IActionResult> Usuarios()
     {
         try
