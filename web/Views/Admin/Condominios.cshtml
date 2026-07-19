@@ -182,12 +182,13 @@
             </div>
 
             <textarea name="numerosTexto" id="numerosTexto" rows="3" placeholder="ex: 101, 102, 103, 104, 201, 202, 203, 204"
+                oninput="atualizarTotalUnidades()"
                 class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors"></textarea>
             <p class="text-xs text-slate-600 mt-1">
                 Deixe em branco pra gerar sequencial 001, 002... até o Total de Unidades.
-                Se preencher manualmente, a quantidade de números tem que bater exatamente com o Total de
-                Unidades (o gerador acima já cuida disso pra você).
+                Se preencher manualmente (ou editar a lista gerada, ex: tirando o 903 e 904 de um andar com
+                menos unidades), o Total de Unidades acima é ajustado sozinho enquanto você digita.
             </p>
         </div>
     </div>
@@ -283,6 +284,17 @@
         }
 
         document.getElementById('numerosTexto').value = numeros.join(', ');
-        document.querySelector('input[name="qtdUnidades"]').value = numeros.length;
+        atualizarTotalUnidades();
+    }
+
+    // Mantém "Total de Unidades" em sincronia com a lista — tanto quando ela é
+    // gerada pelo botão acima quanto quando o admin edita a mão (ex: apaga um
+    // número de um andar com menos unidades, como a cobertura).
+    function atualizarTotalUnidades() {
+        var texto = document.getElementById('numerosTexto').value;
+        var numeros = texto.split(/[,\s]+/).map(function (n) { return n.trim(); }).filter(function (n) { return n.length > 0; });
+        if (numeros.length > 0) {
+            document.querySelector('input[name="qtdUnidades"]').value = numeros.length;
+        }
     }
 </script>
