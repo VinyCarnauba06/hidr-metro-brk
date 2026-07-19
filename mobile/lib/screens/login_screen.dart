@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Hidrômetro BRK',
+                    'HIDRO',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
                   ),
                   const SizedBox(height: 4),

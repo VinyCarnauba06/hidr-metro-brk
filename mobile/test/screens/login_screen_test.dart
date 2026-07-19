@@ -18,7 +18,7 @@ void main() {
         const MaterialApp(home: LoginScreen()),
       );
 
-      expect(find.text('Hidrômetro BRK'), findsOneWidget);
+      expect(find.text('HIDRO'), findsOneWidget);
       expect(find.text('Prolar AGE'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Email'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Senha'), findsOneWidget);

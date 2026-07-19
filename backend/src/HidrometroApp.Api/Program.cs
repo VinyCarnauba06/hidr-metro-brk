@@ -98,7 +98,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Hidrômetro BRK API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "HIDRO API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -155,7 +155,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hidrômetro BRK API v1"));
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HIDRO API v1"));
 
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<HidrometroDbContext>();
