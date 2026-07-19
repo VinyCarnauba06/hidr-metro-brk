@@ -247,6 +247,27 @@ class _CardOs extends StatelessWidget {
               const SizedBox(width: 4),
               Text('${os.totalUnidades} unidades', style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ]),
+            if (os.dataLimite != null) ...[
+              const SizedBox(height: 4),
+              Row(children: [
+                Icon(
+                  os.prazoVencido ? Icons.warning_amber_rounded : Icons.event,
+                  size: 14,
+                  color: os.prazoVencido ? Colors.red : Colors.grey,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  os.prazoVencido
+                      ? 'Prazo vencido: ${_formatarData(os.dataLimite!)}'
+                      : 'Prazo: ${_formatarData(os.dataLimite!)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: os.prazoVencido ? Colors.red : Colors.grey,
+                    fontWeight: os.prazoVencido ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ]),
+            ],
           ],
         ),
         trailing: ElevatedButton(
@@ -262,4 +283,7 @@ class _CardOs extends StatelessWidget {
       ),
     );
   }
+
+  String _formatarData(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }

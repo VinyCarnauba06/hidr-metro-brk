@@ -87,7 +87,7 @@ public class AdminController : Controller
             {
                 nome,
                 endereco,
-                qtdUnidades = numeros?.Count ?? qtdUnidades,
+                qtdUnidades,
                 tipoMedidor,
                 numeros
             });
@@ -102,8 +102,8 @@ public class AdminController : Controller
                 try
                 {
                     var doc = JsonDocument.Parse(body);
-                    TempData["Erro"] = doc.RootElement.TryGetProperty("title", out var t)
-                        ? t.GetString()
+                    TempData["Erro"] = doc.RootElement.TryGetProperty("message", out var m)
+                        ? m.GetString()
                         : $"Erro {(int)resp.StatusCode}";
                 }
                 catch { TempData["Erro"] = $"Erro ao criar condomínio ({(int)resp.StatusCode})."; }
@@ -118,12 +118,12 @@ public class AdminController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> CriarOrdem(int condominioId, int mes, int ano)
+    public async Task<IActionResult> CriarOrdem(int condominioId, int mes, int ano, DateTime? dataLimite)
     {
         try
         {
             var client = CriarClient();
-            var resp = await client.PostAsJsonAsync("/api/admin/ordens", new { condominioId, mes, ano });
+            var resp = await client.PostAsJsonAsync("/api/admin/ordens", new { condominioId, mes, ano, dataLimite });
 
             if (resp.IsSuccessStatusCode)
             {

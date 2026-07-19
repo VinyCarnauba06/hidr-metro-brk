@@ -84,6 +84,17 @@
                 class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
         </div>
+        <div class="md:col-span-3">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                Prazo — data limite pro fiscal (opcional)
+            </label>
+            <input name="dataLimite" type="date"
+                class="w-full md:w-1/3 bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200
+                       focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+            <p class="text-xs text-slate-600 mt-1">
+                O fiscal pode ir antes dessa data sem problema — o que não pode é passar dela sem ter ido.
+            </p>
+        </div>
     </div>
     <div class="flex gap-2 mt-5">
         <button type="submit"
@@ -120,7 +131,7 @@
             <input name="qtdUnidades" required type="number" min="1" placeholder="ex: 40"
                 class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
-            <p class="text-xs text-slate-600 mt-1">Ignorado se "Números das unidades" estiver preenchido — o total vem da lista.</p>
+            <p class="text-xs text-slate-600 mt-1">Se preencher "Números das unidades" abaixo, essa quantidade tem que bater exatamente com o total de números listados.</p>
         </div>
         <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tipo de Medidor *</label>
@@ -142,7 +153,9 @@
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors"></textarea>
             <p class="text-xs text-slate-600 mt-1">
                 Deixe em branco pra gerar sequencial 001, 002... até o Total de Unidades.
-                Preencha pra usar a numeração real do prédio (ex: por andar).
+                Preencha pra usar a numeração real do prédio (ex: por andar) — liste <strong>todos</strong> os
+                números, a quantidade tem que ser exatamente igual ao Total de Unidades (não use "..." nem
+                abreviações — o sistema não completa a sequência sozinho).
             </p>
         </div>
     </div>

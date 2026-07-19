@@ -6,6 +6,7 @@ class OrdemServicoModel {
   final String? endereco;
   final int totalUnidades;
   final String status;
+  final DateTime? dataLimite;
 
   const OrdemServicoModel({
     required this.id,
@@ -15,6 +16,7 @@ class OrdemServicoModel {
     this.endereco,
     required this.totalUnidades,
     required this.status,
+    this.dataLimite,
   });
 
   factory OrdemServicoModel.fromJson(Map<String, dynamic> json) => OrdemServicoModel(
@@ -25,7 +27,11 @@ class OrdemServicoModel {
         endereco: json['endereco'],
         totalUnidades: json['totalUnidades'],
         status: json['status'],
+        dataLimite: json['dataLimite'] != null ? DateTime.parse(json['dataLimite']) : null,
       );
 
   String get competencia => '${mes.toString().padLeft(2, '0')}/$ano';
+
+  // Não tem problema ir antes do prazo — o problema é passar dele sem ter ido.
+  bool get prazoVencido => dataLimite != null && DateTime.now().isAfter(dataLimite!);
 }
