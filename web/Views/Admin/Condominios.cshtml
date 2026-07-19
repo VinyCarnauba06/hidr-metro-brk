@@ -148,14 +148,46 @@
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                 Números das unidades (opcional — separa por vírgula, espaço ou linha)
             </label>
-            <textarea name="numerosTexto" rows="3" placeholder="ex: 101, 102, 103, 104, 201, 202, 203, 204"
+
+            <div class="flex flex-wrap items-end gap-3 mb-2 bg-hcard/60 border border-hrim rounded-lg p-3">
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase tracking-wide mb-1">Andar inicial</label>
+                    <input type="number" id="gerador-andar-ini" min="1" value="1"
+                        class="w-20 bg-hcard border border-hrim rounded px-2 py-1.5 text-sm text-slate-200
+                               focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase tracking-wide mb-1">Andar final</label>
+                    <input type="number" id="gerador-andar-fim" min="1" value="10"
+                        class="w-20 bg-hcard border border-hrim rounded px-2 py-1.5 text-sm text-slate-200
+                               focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase tracking-wide mb-1">Unidades / andar</label>
+                    <input type="number" id="gerador-unid-andar" min="1" value="4"
+                        class="w-24 bg-hcard border border-hrim rounded px-2 py-1.5 text-sm text-slate-200
+                               focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors" />
+                </div>
+                <button type="button" onclick="gerarNumerosPorAndar()"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hbrk/10 text-hbrk border border-hbrk/30
+                           hover:bg-hbrk hover:border-hbrk transition-colors cursor-pointer"
+                    onmouseover="this.style.color='#0d0f14'" onmouseout="this.style.color=''">
+                    Gerar lista
+                </button>
+                <p class="text-[11px] text-slate-600 basis-full">
+                    Gera automaticamente no formato andar+unidade (ex: andar 1 a 10, 4 unidades/andar → 101–104,
+                    201–204 ... 1001–1004) e já ajusta o Total de Unidades. Se algum andar for diferente
+                    (ex: cobertura com menos unidades), edite a lista abaixo depois de gerar.
+                </p>
+            </div>
+
+            <textarea name="numerosTexto" id="numerosTexto" rows="3" placeholder="ex: 101, 102, 103, 104, 201, 202, 203, 204"
                 class="w-full bg-hcard border border-hrim rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600
                        focus:outline-none focus:border-hbrk focus:ring-1 focus:ring-hbrk transition-colors"></textarea>
             <p class="text-xs text-slate-600 mt-1">
                 Deixe em branco pra gerar sequencial 001, 002... até o Total de Unidades.
-                Preencha pra usar a numeração real do prédio (ex: por andar) — liste <strong>todos</strong> os
-                números, a quantidade tem que ser exatamente igual ao Total de Unidades (não use "..." nem
-                abreviações — o sistema não completa a sequência sozinho).
+                Se preencher manualmente, a quantidade de números tem que bater exatamente com o Total de
+                Unidades (o gerador acima já cuida disso pra você).
             </p>
         </div>
     </div>
@@ -231,3 +263,26 @@
         }
     </div>
 </div>
+
+<script>
+    function gerarNumerosPorAndar() {
+        var andarIni = parseInt(document.getElementById('gerador-andar-ini').value, 10);
+        var andarFim = parseInt(document.getElementById('gerador-andar-fim').value, 10);
+        var unidadesPorAndar = parseInt(document.getElementById('gerador-unid-andar').value, 10);
+
+        if (!andarIni || !andarFim || !unidadesPorAndar || andarFim < andarIni) {
+            alert('Preencha andar inicial, andar final e unidades por andar corretamente.');
+            return;
+        }
+
+        var numeros = [];
+        for (var andar = andarIni; andar <= andarFim; andar++) {
+            for (var unidade = 1; unidade <= unidadesPorAndar; unidade++) {
+                numeros.push(andar * 100 + unidade);
+            }
+        }
+
+        document.getElementById('numerosTexto').value = numeros.join(', ');
+        document.querySelector('input[name="qtdUnidades"]').value = numeros.length;
+    }
+</script>
