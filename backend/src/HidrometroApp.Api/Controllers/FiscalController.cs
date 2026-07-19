@@ -39,7 +39,8 @@ public class FiscalController : ControllerBase
                 Endereco = o.Condominio.Endereco,
                 TotalUnidades = o.Condominio.QtdUnidades,
                 Status = o.Status.ToString(),
-                o.DataInicio
+                o.DataInicio,
+                o.DataLimite
             })
             .OrderBy(o => o.Condominio)
             .ToListAsync();

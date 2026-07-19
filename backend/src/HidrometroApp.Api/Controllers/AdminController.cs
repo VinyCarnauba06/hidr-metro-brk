@@ -162,7 +162,12 @@ public class AdminController : ControllerBase
             CondominioId = request.CondominioId,
             Mes = request.Mes,
             Ano = request.Ano,
-            Status = StatusOS.Aberta
+            Status = StatusOS.Aberta,
+            // Npgsql exige Kind=Utc pra "timestamp with time zone" — input vem sem
+            // timezone (ex: <input type="date">), então força Utc explicitamente.
+            DataLimite = request.DataLimite.HasValue
+                ? DateTime.SpecifyKind(request.DataLimite.Value, DateTimeKind.Utc)
+                : null
         };
         _db.OrdensServico.Add(os);
         await _db.SaveChangesAsync();
@@ -242,6 +247,6 @@ public class AdminController : ControllerBase
 }
 
 public record CriarCondominioRequest(string Nome, string? Endereco, int QtdUnidades, string TipoMedidor, List<string>? Numeros = null);
-public record CriarOrdemRequest(int CondominioId, int Mes, int Ano);
+public record CriarOrdemRequest(int CondominioId, int Mes, int Ano, DateTime? DataLimite = null);
 public record CriarUsuarioRequest(string Nome, string Email, string Senha, string Perfil);
 public record AtribuirCondominiosRequest(List<int> CondominioIds);

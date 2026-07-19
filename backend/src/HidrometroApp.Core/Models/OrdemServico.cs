@@ -9,6 +9,9 @@ public class OrdemServico
     public int Ano { get; set; }
     public DateTime DataInicio { get; set; } = DateTime.UtcNow;
     public DateTime? DataConclusao { get; set; }
+    // Data limite pro fiscal visitar o condomínio — não é obrigatório ir exatamente
+    // nesse dia (pode ir antes), o problema é ultrapassar essa data sem ter ido.
+    public DateTime? DataLimite { get; set; }
     public StatusOS Status { get; set; } = StatusOS.Aberta;
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 
